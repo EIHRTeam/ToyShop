@@ -1,0 +1,4 @@
+# Preserve upstream redistribution files byte for byte, including their whitespace.
+apps/illustrator-cep/vendor/CSInterface.js -whitespace
+licenses/OCR-A-NOTICE.txt -whitespace
+licenses/OCR-B-NOTICE.txt -whitespace

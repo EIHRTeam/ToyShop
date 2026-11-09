@@ -1,0 +1,26 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { AstMatrixApplicationService } from '@astmatrix/application';
+import { bwipProvider } from '@astmatrix/barcode-core';
+import { FigmaPluginAdapter, FigmaTransport } from '@astmatrix/host-adapter-figma-plugin';
+import { FigmaPanel } from './panel';
+import '@astmatrix/ui-react/styles.css';
+import '@toyshop/ui-react/styles.css';
+import './styles.css';
+
+const transport = new FigmaTransport(window);
+const adapter = new FigmaPluginAdapter(transport);
+const service = new AstMatrixApplicationService(bwipProvider);
+window.addEventListener('beforeunload', () => adapter.dispose());
+const container = document.getElementById('root');
+if (!container) throw new Error('ToyShop Figma panel requires #root');
+createRoot(container, {
+  onUncaughtError: () => {
+    container.textContent =
+      'ToyShop could not start. Please reopen the plugin. / 插件启动失败，请重新打开。';
+  },
+}).render(
+  <StrictMode>
+    <FigmaPanel service={service} adapter={adapter} transport={transport} />
+  </StrictMode>,
+);

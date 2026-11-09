@@ -1,0 +1,28 @@
+# Files AstMatrix must not let a generic formatter rewrite.
+#
+# ExtendScript sources target the legacy ExtendScript engine. Reformatting them risks changing
+# syntax the engine accepts, so they are excluded from Oxfmt and validated by the dedicated JSX
+# pipeline instead.
+apps/illustrator-cep/jsx/**
+
+# Host manifests are generated/reviewed against Adobe's schema, not against a code formatter.
+apps/illustrator-cep/CSXS/manifest.xml
+apps/photoshop-uxp/manifest.json
+
+# Legal texts are verbatim upstream documents; no formatter may rewrite them.
+LICENSE
+THIRD-PARTY-NOTICES.md
+licenses/**
+
+# Installed SDK assets and build output.
+tmp/
+**/dist/
+**/release/
+
+# Historical evidence snapshots are kept byte-for-byte; they are not build or test inputs.
+docs/plan/evidence/**/*.json
+
+# Unmodified Adobe CEP redistributables.
+apps/illustrator-cep/vendor/**
+
+README.md
