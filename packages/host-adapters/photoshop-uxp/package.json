@@ -13,6 +13,7 @@
   "dependencies": {
     "@astmatrix/host-contract": "workspace:*",
     "@astmatrix/shared": "workspace:*",
-    "@astmatrix/vector-ir": "workspace:*"
+    "@astmatrix/vector-ir": "workspace:*",
+    "@toyshop/module-text-case": "workspace:*"
   }
 }

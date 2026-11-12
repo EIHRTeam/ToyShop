@@ -150,11 +150,24 @@ it('no document still allows SVG copying; insertion is exclusive and reports ada
     adapter.setDocument('other-document');
     release();
   });
-  expect(document.body.textContent).toContain('DOCUMENT_CHANGED');
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  const errorToast = document.querySelector('[data-sonner-toast][data-type="error"]');
+  expect(errorToast?.textContent).toContain('DOCUMENT_CHANGED');
+  expect(errorToast?.getAttribute('data-rich-colors')).toBe('true');
+  expect(document.querySelector('.preview .error')).toBeNull();
   adapter.waitBeforeCommit = () => Promise.resolve();
   adapter.failure = 'rollback-failed';
   await act(async () => button('模拟插入文档').click());
-  expect(document.body.textContent).toContain('ROLLBACK_FAILED');
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  expect(
+    Array.from(document.querySelectorAll('[data-sonner-toast][data-type="error"]')).some((toast) =>
+      toast.textContent?.includes('ROLLBACK_FAILED'),
+    ),
+  ).toBe(true);
   expect(document.body.textContent).toContain('残留对象');
 });
 it('unmount during a queued insert cancels before commit', async () => {

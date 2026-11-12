@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-AstMatrix is an offline-first barcode plugin skeleton. `apps/` contains the playground
+ToyShop is a modular suite of graphic design tools. `apps/` contains the playground
 and Illustrator CEP, Photoshop UXP, Figma Design, and Affinity entries. `packages/` contains encoding,
 profiles, catalog, vector IR, SVG rendering, services, UI, and host adapters.
 `tooling/` owns builds and packaging; `tests/` holds fixtures and layered suites.

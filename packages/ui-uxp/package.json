@@ -16,6 +16,7 @@
     "@astmatrix/profiles": "workspace:*",
     "@astmatrix/shared": "workspace:*",
     "@astmatrix/symbology-catalog": "workspace:*",
-    "@astmatrix/vector-ir": "workspace:*"
+    "@astmatrix/vector-ir": "workspace:*",
+    "@toyshop/module-text-case": "workspace:*"
   }
 }

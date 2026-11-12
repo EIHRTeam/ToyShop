@@ -12,6 +12,7 @@ import {
 import type { Dispatch, ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { FieldErrors, Resolver } from 'react-hook-form';
+import { Toaster, toast } from 'sonner';
 import {
   AstMatrixApplicationService,
   PreviewController,
@@ -27,7 +28,7 @@ import type { HostAdapter } from '@astmatrix/host-contract';
 import { initialSelection, selectionReducer } from './selection';
 import { copySvgToClipboard } from './clipboard';
 import { LocaleProvider, useLocale } from './l10n';
-import { ExternalLinkContext, HeaderActions, ProjectLinkContext } from './header-actions';
+import { BrandHeader, ExternalLinkContext, ProjectLinkContext } from './header-actions';
 import { contentPlaceholder } from './input-guidance';
 import { engineErrorMessage } from './l10n/engine-errors';
 import type { SelectionAction, SelectionState } from './selection';
@@ -93,6 +94,7 @@ export function AstMatrixProviders({
                   <SettingsDispatchContext value={setAdvanced}>
                     <SelectionStateContext value={selection}>
                       <SelectionDispatchContext value={dispatch}>
+                        <Toaster position="bottom-center" theme="dark" richColors closeButton />
                         {children}
                       </SelectionDispatchContext>
                     </SelectionStateContext>
@@ -119,7 +121,7 @@ interface Runtime {
   preview: PreviewController;
   insert: InsertController;
 }
-export function AstMatrixPanel() {
+export function AstMatrixPanel({ showHeader = true }: { showHeader?: boolean }) {
   const service = useContext(ServiceContext),
     adapter = useContext(HostContext);
   const { debounceMs } = useContext(SettingsContext);
@@ -143,13 +145,7 @@ export function AstMatrixPanel() {
   }, [runtime]);
   return (
     <main className="astmatrix">
-      <header className="brand">
-        <div className="brand-mark" aria-hidden="true">
-          ▥
-        </div>
-        <h1>AstMatrix</h1>
-        <HeaderActions />
-      </header>
+      {showHeader ? <BrandHeader /> : null}
       <Workbench runtime={runtime} />
     </main>
   );
@@ -425,6 +421,13 @@ function BarcodeForm({
 }
 function PreviewPanel({ runtime }: { runtime: Runtime }) {
   const { t } = useLocale();
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const preview = useAstMatrixPreview(runtime.preview),
     insert = useInsert(runtime.insert);
   const host = useHostSnapshot();
@@ -456,6 +459,22 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
         current?.revision === revision
           ? { revision, status: 'error', message: errorMessage(error) }
           : current,
+      );
+    }
+  };
+  const insertScene = async () => {
+    try {
+      const result = await runtime.insert.insert();
+      if (!mounted.current) return;
+      toast.success(t(fake ? '模拟插入成功' : '插入成功'), {
+        description: `${result.objectId} / ${result.documentId}`,
+      });
+    } catch (error) {
+      if (!mounted.current) return;
+      toast.error(
+        error instanceof AstMatrixError
+          ? `${error.code}：${t(error.message)}`
+          : errorMessage(error),
       );
     }
   };
@@ -501,7 +520,7 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
           className="primary"
           disabled={!ready || !!reason}
           onClick={() => {
-            void runtime.insert.insert().catch(() => {});
+            void insertScene();
           }}
         >
           {t(
@@ -534,16 +553,6 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
         </p>
       ) : null}
       {reason ? <p className="hint">{reason}</p> : null}
-      {insert.status === 'success' ? (
-        <output className="success">
-          {t(fake ? '模拟插入成功' : '插入成功')}：{insert.result.objectId} /{' '}
-          {insert.result.documentId}
-        </output>
-      ) : insert.status === 'error' ? (
-        <div role="alert" className="error">
-          {insert.error.code}：{t(insert.error.message)}
-        </div>
-      ) : null}
     </section>
   );
 }

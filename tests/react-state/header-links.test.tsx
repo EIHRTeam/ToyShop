@@ -4,7 +4,15 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
-import { ISSUES_URL, LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
+import {
+  ISSUES_URL,
+  LICENSE_URL,
+  PROJECT_URL,
+  TOYSHOP_ISSUES_URL,
+  TOYSHOP_PROJECT_URL,
+  isAllowedExternalLink,
+  openSourceProjects,
+} from '@astmatrix/shared';
 import { AstMatrixProviders } from '@astmatrix/ui-react';
 import { HeaderActions } from '../../packages/ui-react/src/header-actions';
 import { createCepLinkOpener } from '../../apps/illustrator-cep/panel/external-links';
@@ -118,6 +126,43 @@ it('retains normal browser links and the existing project-only host callback', a
   expect(openProject).toHaveBeenCalledOnce();
 });
 
+it('shows every open-source repository with its license and opens it through the host', async () => {
+  const open = vi.fn<(url: string) => void>();
+  await renderLinks(open);
+  await openAbout();
+  await act(async () => document.querySelector<HTMLButtonElement>('.about-link-button')!.click());
+  const dialog = document.querySelector('.open-source-dialog')!;
+  const links = dialog.querySelectorAll<HTMLAnchorElement>('.open-source-link');
+  expect(links).toHaveLength(openSourceProjects.length);
+  expect(links.length).toBeGreaterThan(0);
+  for (const [index, project] of openSourceProjects.entries()) {
+    expect(links[index]?.href).toBe(project.url);
+    expect(links[index]?.querySelector('small')?.textContent).toBe(project.license);
+    expect(isAllowedExternalLink(project.url)).toBe(true);
+  }
+  const bwip = dialog.querySelector<HTMLAnchorElement>(
+    'a[href="https://github.com/metafloor/bwip-js"]',
+  )!;
+  expect(bwip.target).toBe('_blank');
+  expect(bwip.rel).toBe('noopener noreferrer');
+  expect(await click(bwip)).toBe(true);
+  expect(open).toHaveBeenCalledExactlyOnceWith(bwip.href);
+});
+
+it('shows repository URL when a host cannot open an open-source project', async () => {
+  const open = vi.fn<(url: string) => Promise<void>>().mockRejectedValue(new Error('blocked'));
+  await renderLinks(open);
+  await openAbout();
+  await act(async () => document.querySelector<HTMLButtonElement>('.about-link-button')!.click());
+  const link = document.querySelector<HTMLAnchorElement>(
+    '.open-source-dialog a[href="https://github.com/metafloor/bwip-js"]',
+  )!;
+  await click(link);
+  expect(document.querySelector('.open-source-dialog [role="alert"]')?.textContent).toContain(
+    link.href,
+  );
+});
+
 it('reports unavailable or failed native URL opening and rejects unknown destinations', () => {
   const open = vi.fn<(url: string) => number>(() => 201);
   const opener = createCepLinkOpener({ openURLInDefaultBrowser: open });
@@ -126,3 +171,12 @@ it('reports unavailable or failed native URL opening and rejects unknown destina
   expect(() => opener('https://untrusted.example')).toThrow('Unsupported external link');
   expect(open).toHaveBeenCalledExactlyOnceWith(LICENSE_URL);
 });
+
+it.each([TOYSHOP_PROJECT_URL, TOYSHOP_ISSUES_URL])(
+  'allows the ToyShop destination %s in the CEP browser opener',
+  (url) => {
+    const open = vi.fn<(url: string) => number>(() => 0);
+    createCepLinkOpener({ openURLInDefaultBrowser: open })(url);
+    expect(open).toHaveBeenCalledExactlyOnceWith(url);
+  },
+);

@@ -14,7 +14,8 @@
   "dependencies": {
     "@astmatrix/host-contract": "workspace:*",
     "@astmatrix/shared": "workspace:*",
-    "@astmatrix/vector-ir": "workspace:*"
+    "@astmatrix/vector-ir": "workspace:*",
+    "@toyshop/module-text-case": "workspace:*"
   },
   "devDependencies": {
     "@figma/plugin-typings": "1.142.0"

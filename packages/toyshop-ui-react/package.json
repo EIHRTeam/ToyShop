@@ -11,9 +11,12 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@astmatrix/shared": "workspace:*",
+    "@astmatrix/ui-react": "workspace:*",
     "@toyshop/core": "workspace:*",
     "@toyshop/module-astmatrix": "workspace:*",
-    "@toyshop/module-text-case": "workspace:*"
+    "@toyshop/module-text-case": "workspace:*",
+    "sonner": "^2.0.8"
   },
   "devDependencies": {
     "@types/react": "^19.3.0"

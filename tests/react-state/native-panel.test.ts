@@ -5,6 +5,7 @@ import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
 import { mountNativePanel } from '@astmatrix/ui-uxp';
 import type { UxpElement } from '@astmatrix/ui-uxp';
+import type { TextCaseHost } from '@toyshop/module-text-case';
 let panel: { dispose: () => void } | undefined;
 afterEach(() => {
   panel?.dispose();
@@ -73,4 +74,51 @@ it('native form converts numeric MaxiCode selections and generates both admitted
   await waitFor(() => expect(generate.mock.lastCall?.[0].fields.mode).toBe(5));
   await waitFor(() => expect(button('插入文档').disabled).toBe(false));
   expect(root.textContent).toContain('MaxiCode 模式 2/3');
+});
+
+it('native text case converts directly, restores, and displays errors in red', async () => {
+  const root = document.createElement('div');
+  document.body.appendChild(root);
+  let value = 'Hello 世界';
+  let rejectScan = false;
+  const textCaseHost: TextCaseHost = {
+    scan: async (scope, includeHidden) => {
+      if (rejectScan) throw new Error('扫描失败');
+      return {
+        documentId: 'doc-1',
+        revision: '1',
+        scope,
+        includeHidden,
+        selectionFingerprint: 'text-1',
+        targets: [{ id: 'text-1', name: 'Greeting', text: value, styleFingerprint: 'style-1' }],
+      };
+    },
+    apply: async (plan) => {
+      value = plan.changes[0]!.after;
+      return { changed: 1, failed: [], undoGrouped: true };
+    },
+  };
+  panel = mountNativePanel({
+    document,
+    root: root as unknown as UxpElement,
+    service: new AstMatrixApplicationService(bwipProvider),
+    adapter: new FakeHostAdapter(),
+    textCaseHost,
+    previewSvg: async () => 'file:/preview.svg',
+    exportSvg: async () => {},
+  });
+  const button = (label: string) =>
+    Array.from(root.querySelectorAll('button')).find((node) => node.textContent === label)!;
+  expect(button('撤销').disabled).toBe(true);
+  expect(button('扫描并预览')).toBeUndefined();
+  fireEvent.click(button('转换'));
+  await waitFor(() => expect(value).toBe('HELLO 世界'));
+  await waitFor(() => expect(button('撤销').disabled).toBe(false));
+  fireEvent.click(button('撤销'));
+  await waitFor(() => expect(value).toBe('Hello 世界'));
+  await waitFor(() => expect(button('转换').disabled).toBe(false));
+  rejectScan = true;
+  fireEvent.click(button('转换'));
+  await waitFor(() => expect(root.textContent).toContain('扫描失败'));
+  expect(root.querySelector('section .field-error')?.textContent).toContain('扫描失败');
 });

@@ -44,7 +44,7 @@ pnpm build:illustrator
 [[ -s "$source_dir/CSXS/manifest.xml" ]] || die 'Built extension is missing CSXS/manifest.xml'
 grep -Fq "ExtensionBundleVersion=\"$version\"" "$source_dir/CSXS/manifest.xml" ||
   die 'Illustrator manifest version does not match package.json'
-grep -Fq 'ExtensionBundleId="com.toyshop.illustrator"' \
+grep -Fq 'ExtensionBundleId="206252"' \
   "$source_dir/CSXS/manifest.xml" || die 'Illustrator bundle ID does not match Adobe Exchange'
 
 if [[ -n ${ASTMATRIX_P12_PASSWORD:-} ]]; then

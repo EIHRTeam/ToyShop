@@ -1,12 +1,6 @@
 import { HostError, validateEnvelope } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostResponse, HostSnapshot } from '@astmatrix/host-contract';
-import {
-  errorMessage,
-  ISSUES_URL,
-  LICENSE_URL,
-  PROJECT_URL,
-  stableStringify,
-} from '@astmatrix/shared';
+import { errorMessage, isAllowedExternalLink, stableStringify } from '@astmatrix/shared';
 import type { VectorScene } from '@astmatrix/vector-ir';
 import {
   FIGMA_BRIDGE_VERSION,
@@ -17,10 +11,23 @@ import {
   record,
 } from './protocol';
 import { insertScene } from './renderer';
+import { applyFigmaText, scanFigmaText } from './text-case';
+import type { TextChangePlan } from '@toyshop/module-text-case';
 import type { FigmaDrawingAPI } from './renderer';
 
 export type FigmaRuntimeAPI = FigmaDrawingAPI &
-  Pick<PluginAPI, 'root' | 'ui' | 'on' | 'off' | 'commitUndo' | 'openExternal'>;
+  Pick<
+    PluginAPI,
+    | 'root'
+    | 'ui'
+    | 'on'
+    | 'off'
+    | 'commitUndo'
+    | 'openExternal'
+    | 'loadAllPagesAsync'
+    | 'loadFontAsync'
+    | 'getNodeByIdAsync'
+  >;
 export function startFigmaPlugin(
   api: FigmaRuntimeAPI & Pick<PluginAPI, 'showUI'>,
   html: string,
@@ -48,7 +55,9 @@ export class FigmaPluginRuntime {
   private revision = 0;
   private closed = false;
   private pending: HostEnvelope | null = null;
+  private textApplying = false;
   private completed = new Map<string, HostResponse<unknown>>();
+  private inFlight = new Set<string>();
   private readonly api: FigmaRuntimeAPI;
   constructor(api: FigmaRuntimeAPI) {
     this.api = api;
@@ -79,6 +88,7 @@ export class FigmaPluginRuntime {
     this.api.ui.postMessage({ channel: FIGMA_CHANNEL, session: this.session, ...message });
   }
   private reply(response: HostResponse<unknown>): void {
+    this.inFlight.delete(response.requestId);
     this.completed.set(response.requestId, response);
     // A closed UI must not turn an already committed insertion into a failed operation.
     try {
@@ -128,6 +138,7 @@ export class FigmaPluginRuntime {
       this.post({ type: 'response', requestId: id, response: completed });
       return;
     }
+    if (this.inFlight.has(id)) return;
     if (value.type === 'cancel') {
       if (this.pending?.requestId === id) {
         this.pending = null;
@@ -167,7 +178,7 @@ export class FigmaPluginRuntime {
         return;
       }
       if (value.type === 'openExternal') {
-        if (value.url !== PROJECT_URL && value.url !== LICENSE_URL && value.url !== ISSUES_URL)
+        if (typeof value.url !== 'string' || !isAllowedExternalLink(value.url))
           throw new HostError('INVALID_INPUT', '不支持的外部链接');
         this.api.openExternal(value.url);
         this.reply({ requestId: id, ok: true, result: null });
@@ -180,9 +191,52 @@ export class FigmaPluginRuntime {
         throw new HostError('INVALID_INPUT', '无效消息信封或消息过大');
       if (envelope.operation === 'capabilities') {
         this.reply({ requestId: id, ok: true, result: this.snapshot() });
+      } else if (envelope.operation === 'textScan') {
+        this.inFlight.add(id);
+        const documentId = this.snapshot().documentId!;
+        const revision = String(this.revision);
+        void scanFigmaText(
+          this.api,
+          envelope.payload.scope as 'selected' | 'area' | 'document',
+          envelope.payload.includeHidden as boolean,
+          documentId,
+          revision,
+        ).then(
+          (result) => {
+            if (this.snapshot().documentId !== documentId || String(this.revision) !== revision)
+              return this.fail(id, new HostError('DOCUMENT_CHANGED', '扫描期间页面已变化'));
+            return this.reply({ requestId: id, ok: true, result });
+          },
+          (error) => this.fail(id, error),
+        );
+      } else if (envelope.operation === 'textApply') {
+        if (this.textApplying || this.pending) throw new HostError('HOST_BUSY', '已有文档修改任务');
+        this.textApplying = true;
+        this.inFlight.add(id);
+        const documentId = this.snapshot().documentId!;
+        const revision = String(this.revision);
+        void applyFigmaText(
+          this.api,
+          envelope.payload.plan as unknown as TextChangePlan,
+          documentId,
+          revision,
+          () =>
+            !this.closed &&
+            this.snapshot().documentId === documentId &&
+            String(this.revision) === revision,
+        ).then(
+          (result) => {
+            this.textApplying = false;
+            return this.reply({ requestId: id, ok: true, result });
+          },
+          (error) => {
+            this.textApplying = false;
+            return this.fail(id, error);
+          },
+        );
       } else if (envelope.operation === 'insert') {
         if (this.pending?.requestId === id) return;
-        if (this.pending) throw new HostError('HOST_BUSY', '已有插入任务');
+        if (this.pending || this.textApplying) throw new HostError('HOST_BUSY', '已有文档修改任务');
         const p = envelope.payload;
         if (p.placement !== 'center')
           throw new HostError('UNSUPPORTED_FEATURE', 'Figma 首版仅支持视口中心定位');
@@ -205,5 +259,6 @@ export class FigmaPluginRuntime {
     this.api.off('close', this.dispose);
     this.api.ui.onmessage = undefined;
     this.completed.clear();
+    this.inFlight.clear();
   };
 }

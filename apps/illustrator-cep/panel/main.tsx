@@ -7,6 +7,7 @@ import type { CSInterfaceLike } from '@astmatrix/host-adapter-illustrator-cep';
 declare const CSInterface: new () => CSInterfaceLike;
 import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
 import { ToyshopPanel } from '@toyshop/ui-react';
+import { createRemoteTextCaseHost } from '@toyshop/module-text-case';
 import '@astmatrix/ui-react/styles.css';
 import '@toyshop/ui-react/styles.css';
 import { afterPanelPaint, startHostRefresh } from './host-refresh';
@@ -15,6 +16,7 @@ import { showPanelStartupError } from './startup-error';
 const service = new AstMatrixApplicationService(bwipProvider);
 const cs = new CSInterface();
 const adapter = new IllustratorCepAdapter(cs);
+const textCaseHost = createRemoteTextCaseHost(adapter.textTransport, true);
 const hostLocale = cs.getHostEnvironment().appUILocale;
 const openExternal = createCepLinkOpener(cs);
 const stopRefresh = afterPanelPaint(window, () =>
@@ -36,7 +38,7 @@ createRoot(container, {
       hostLocale={hostLocale}
       openExternal={openExternal}
     >
-      <ToyshopPanel astmatrix={AstMatrixPanel} />
+      <ToyshopPanel astmatrix={AstMatrixPanel} textCaseHost={textCaseHost} />
     </AstMatrixProviders>
   </StrictMode>,
 );

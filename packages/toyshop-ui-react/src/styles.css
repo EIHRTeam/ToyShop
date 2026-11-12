@@ -4,128 +4,166 @@
   background: var(--background, #0a0a0a);
 }
 .toyshop-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border, #333);
+  max-width: 1120px;
+  padding: 40px 32px 0;
+  margin: 0 auto 28px;
 }
-.toyshop-mark {
+.toyshop-home {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 16px 32px 40px;
+  animation: toyshop-home-enter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.toyshop-home h2 {
+  margin: 0 0 24px;
+  font-size: 22px;
+}
+.toyshop-tool-grid {
   display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: #e8c981;
-  color: #181510;
-  font-weight: 800;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
-.toyshop-header h1 {
-  margin: 0;
-  font-size: 18px;
-  letter-spacing: -0.4px;
-}
-.toyshop-header p {
-  margin: 1px 0 0;
-  color: var(--muted-foreground, #aaa);
-  font-size: 11px;
-}
-.toyshop-nav {
-  display: flex;
-  gap: 8px;
-  padding: 12px 24px;
-  border-bottom: 1px solid var(--border, #333);
-}
-.toyshop-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 9px 12px;
-  min-width: 0;
+.toyshop-tool-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  column-gap: 14px;
+  align-items: center;
+  min-height: 104px;
+  padding: 22px;
   border: 1px solid var(--border, #333);
-  border-radius: 7px;
+  border-radius: 10px;
   background: var(--card, #171717);
   color: inherit;
   text-align: left;
-  font-size: 13px;
 }
-.toyshop-nav-item.active {
-  border-color: #e8c981;
-  background: #302a1e;
+.toyshop-tool-card:hover,
+.toyshop-tool-card:focus-visible {
+  border-color: var(--ring, #737373);
+  background: var(--secondary, #262626);
 }
-.toyshop-nav-item small {
+.toyshop-tool-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 9px;
+  background: var(--secondary, #262626);
+  color: var(--foreground, #fafafa);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -2px;
+}
+.toyshop-tool-icon svg {
+  width: 27px;
+  height: 27px;
+}
+.toyshop-tool-name {
+  font-size: 16px;
+  font-weight: 650;
+}
+.toyshop-tool-arrow {
+  grid-column: 3;
   color: var(--muted-foreground, #aaa);
-  font-size: 10px;
+  font-size: 20px;
+}
+.toyshop-module-panel {
+  border-top: 1px solid var(--border, #333);
+  animation: toyshop-module-enter 240ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes toyshop-home-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes toyshop-module-enter {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.toyshop-module-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 16px 24px 0;
+}
+.toyshop-module-toolbar h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.toyshop-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted-foreground, #aaa);
+}
+.toyshop-back svg {
+  width: 16px;
+  height: 16px;
+}
+.toyshop-back:hover {
+  background: var(--secondary, #262626);
+  color: var(--foreground, #fafafa);
 }
 .toyshop-workspace .astmatrix {
-  padding-top: 22px;
+  padding-top: 16px;
 }
 .toyshop-text-case {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
   max-width: 680px;
   margin: 0 auto;
   padding: 26px 24px;
 }
-.toyshop-text-case h2 {
-  margin: 0;
-  font-size: 23px;
-}
-.toyshop-text-case p {
-  margin: 0 0 8px;
-  color: var(--muted-foreground, #aaa);
-  line-height: 1.5;
-  font-size: 13px;
-}
-.toyshop-kicker {
-  color: #e8c981;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-.toyshop-text-case label {
-  margin-top: 8px;
+.toyshop-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
   font-size: 12px;
-  font-weight: 600;
 }
-.toyshop-text-case select,
-.toyshop-text-case textarea,
-.toyshop-output {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--input, #444);
-  border-radius: 6px;
-  background: var(--card, #171717);
-  color: inherit;
-}
-.toyshop-text-case textarea {
-  min-height: 90px;
-  resize: vertical;
-}
-.toyshop-output {
-  display: block;
-  min-height: 50px;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  user-select: text;
-}
-.toyshop-text-case .toyshop-note {
-  margin-top: 8px;
-  font-size: 11px;
+.toyshop-skipped {
+  margin-top: 12px;
+  color: var(--muted-foreground, #aaa);
+  font-size: 12px;
 }
 @media (max-width: 400px) {
   .toyshop-header {
-    padding: 14px 16px;
+    padding: 20px 16px 0;
   }
-  .toyshop-nav {
-    padding: 10px 16px;
+  .toyshop-home {
+    padding: 12px 16px 32px;
   }
-  .toyshop-nav-item {
-    flex: 1;
+  .toyshop-tool-grid {
+    grid-template-columns: 1fr;
+  }
+  .toyshop-module-toolbar {
+    padding: 12px 16px 0;
   }
   .toyshop-text-case {
     padding: 20px 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toyshop-home,
+  .toyshop-module-panel {
+    animation: none;
   }
 }

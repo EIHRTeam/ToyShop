@@ -2,7 +2,13 @@ import { createContext, useContext, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import * as Dialog from 'radix-ui/dialog';
 import * as Popover from 'radix-ui/popover';
-import { ISSUES_URL, LICENSE_URL, PROJECT_URL, PROJECT_VERSION } from '@astmatrix/shared';
+import {
+  ISSUES_URL,
+  LICENSE_URL,
+  PROJECT_URL,
+  PROJECT_VERSION,
+  openSourceProjects,
+} from '@astmatrix/shared';
 import { useLocale } from './l10n';
 import type { LanguagePreference } from './l10n';
 
@@ -13,6 +19,34 @@ export const ExternalLinkContext = createContext<
   ((url: string) => void | Promise<void>) | undefined
 >(undefined);
 const githubIcon = new URL('./assets/GitHub_Invertocat_Black.svg', import.meta.url).href;
+export interface HeaderProduct {
+  name: string;
+  projectUrl: string;
+  issuesUrl: string;
+}
+const astmatrixProduct: HeaderProduct = {
+  name: 'AstMatrix',
+  projectUrl: PROJECT_URL,
+  issuesUrl: ISSUES_URL,
+};
+
+export function BrandHeader({
+  product = astmatrixProduct,
+  className = '',
+}: {
+  product?: HeaderProduct;
+  className?: string;
+}) {
+  return (
+    <header className={className ? `brand ${className}` : 'brand'}>
+      <div className="brand-mark" aria-hidden="true">
+        ▥
+      </div>
+      <h1>{product.name}</h1>
+      <HeaderActions product={product} />
+    </header>
+  );
+}
 function LanguageIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
@@ -34,6 +68,13 @@ function IssueIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 7v6m0 3v1" />
+    </svg>
+  );
+}
+function CodeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="m8 7-5 5 5 5m8-10 5 5-5 5m-3-13-4 16" />
     </svg>
   );
 }
@@ -190,14 +231,14 @@ function LanguageMenu() {
     </Popover.Root>
   );
 }
-export function HeaderActions() {
+export function HeaderActions({ product = astmatrixProduct }: { product?: HeaderProduct }) {
   const { t } = useLocale();
   const [linkError, setLinkError] = useState<string | null>(null);
   return (
     <div className="header-actions">
       <LanguageMenu />
       <ExternalLink
-        href={PROJECT_URL}
+        href={product.projectUrl}
         label={t('打开 GitHub 仓库')}
         title="GitHub"
         className="icon-button"
@@ -212,7 +253,7 @@ export function HeaderActions() {
         <Dialog.Portal>
           <Dialog.Overlay className="about-overlay" />
           <Dialog.Content className="about-dialog">
-            <Dialog.Title>{t('关于 AstMatrix')}</Dialog.Title>
+            <Dialog.Title>{t(`关于 ${product.name}`)}</Dialog.Title>
             <Dialog.Description>
               {t('轻量而强大的多编码格式条形码与二维码生成器')}
             </Dialog.Description>
@@ -228,7 +269,7 @@ export function HeaderActions() {
               </ExternalLink>
               .
             </p>
-            {linkError === LICENSE_URL || linkError === ISSUES_URL ? (
+            {linkError === LICENSE_URL || linkError === product.issuesUrl ? (
               <div className="error" role="alert">
                 {t(
                   linkError === LICENSE_URL
@@ -239,9 +280,44 @@ export function HeaderActions() {
               </div>
             ) : null}
             <div className="about-links">
+              <Dialog.Root>
+                <Dialog.Trigger className="about-link about-link-button">
+                  <CodeIcon />
+                  <span>{t('开放源代码许可')}</span>
+                  <ExternalArrowIcon />
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                  <Dialog.Overlay className="about-overlay open-source-overlay" />
+                  <Dialog.Content className="about-dialog open-source-dialog">
+                    <Dialog.Title>{t('开放源代码许可')}</Dialog.Title>
+                    <Dialog.Description>{t('ToyShop 基于以下开源项目打造而成')}</Dialog.Description>
+                    <div className="open-source-list">
+                      {openSourceProjects.map((project) => (
+                        <ExternalLink
+                          key={project.url}
+                          className="open-source-link"
+                          href={project.url}
+                          onError={setLinkError}
+                          title={project.packages.join(', ')}
+                        >
+                          <span className="open-source-name">{project.name}</span>
+                          <small>{project.license}</small>
+                          <ExternalArrowIcon />
+                        </ExternalLink>
+                      ))}
+                    </div>
+                    {openSourceProjects.some((project) => project.url === linkError) ? (
+                      <div className="error" role="alert">
+                        {t('无法打开项目仓库，请在浏览器中访问：')} {linkError}
+                      </div>
+                    ) : null}
+                    <Dialog.Close className="about-close">{t('关闭')}</Dialog.Close>
+                  </Dialog.Content>
+                </Dialog.Portal>
+              </Dialog.Root>
               <ExternalLink
                 className="about-link"
-                href={PROJECT_URL}
+                href={product.projectUrl}
                 label={t('打开 GitHub 仓库')}
                 title="GitHub"
                 onError={setLinkError}
@@ -250,7 +326,7 @@ export function HeaderActions() {
                 <span>GitHub</span>
                 <ExternalArrowIcon />
               </ExternalLink>
-              <ExternalLink className="about-link" href={ISSUES_URL} onError={setLinkError}>
+              <ExternalLink className="about-link" href={product.issuesUrl} onError={setLinkError}>
                 <IssueIcon />
                 <span>{t('反馈问题')}</span>
                 <ExternalArrowIcon />
@@ -260,9 +336,9 @@ export function HeaderActions() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-      {linkError === PROJECT_URL ? (
+      {linkError === product.projectUrl ? (
         <p className="header-error" role="alert">
-          {t('无法打开 GitHub，请在浏览器中访问：')} {PROJECT_URL}
+          {t('无法打开 GitHub，请在浏览器中访问：')} {product.projectUrl}
         </p>
       ) : null}
     </div>

@@ -91,6 +91,7 @@ export function validatePayload(host, files, version) {
     );
     const xml = files.get('CSXS/manifest.xml')?.toString();
     assert(xml?.includes(`ExtensionBundleVersion="${version}"`), 'CEP payload version mismatch');
+    assert(xml.includes('ExtensionBundleId="206252"'), 'CEP payload ID mismatch');
     assert(xml.includes('Version="[27.0,30.9]"'), 'CEP host range changed');
   } else {
     required.push(
@@ -106,7 +107,7 @@ export function validatePayload(host, files, version) {
     );
     const manifest = JSON.parse(files.get('manifest.json')?.toString() ?? '{}');
     assert.equal(manifest.version, version, 'UXP payload version mismatch');
-    assert.equal(manifest.id, '7d1a0f42');
+    assert.equal(manifest.id, '8941323d');
     assert.equal(manifest.host?.app, 'PS');
     assert.equal(manifest.host?.minVersion, '26.0.0');
     assert.equal(manifest.requiredPermissions?.webview?.enableMessageBridge, 'localOnly');

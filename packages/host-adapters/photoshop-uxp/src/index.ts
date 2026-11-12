@@ -18,12 +18,16 @@ import type { Color, VectorScene } from '@astmatrix/vector-ir';
 import { geometryContours } from './shape';
 import type { Contour } from './shape';
 import type { ModalContext, PhotoshopRuntime, PsDocument, PsLayer } from './runtime';
+import { PhotoshopTextCaseHost } from './text-case';
+import type { TextChangePlan } from '@toyshop/module-text-case';
 export type { PhotoshopRuntime } from './runtime';
+export { PhotoshopTextCaseHost } from './text-case';
 export { geometryContours } from './shape';
 const PREFIX = 'AstMatrix v1 ';
 const EVENTS = ['open', 'close', 'select', 'make', 'set', 'delete'];
 export class PhotoshopAdapter implements HostAdapter {
   readonly id = 'photoshop-uxp';
+  readonly textCaseHost: PhotoshopTextCaseHost;
   private readonly ps: PhotoshopRuntime;
   private readonly hostVersion: string;
   private snapshot = emptyHostSnapshot();
@@ -35,6 +39,7 @@ export class PhotoshopAdapter implements HostAdapter {
   constructor(ps: PhotoshopRuntime, hostVersion: string) {
     this.ps = ps;
     this.hostVersion = hostVersion;
+    this.textCaseHost = new PhotoshopTextCaseHost(ps, () => this.getSnapshot());
     this.refresh();
   }
   getSnapshot = () => {
@@ -361,6 +366,13 @@ export class PhotoshopAdapter implements HostAdapter {
       validateEnvelope(envelope);
       let result: unknown;
       if (envelope.operation === 'capabilities') result = this.getSnapshot();
+      else if (envelope.operation === 'textScan')
+        result = await this.textCaseHost.scan(
+          envelope.payload.scope as 'selected' | 'document',
+          envelope.payload.includeHidden as boolean,
+        );
+      else if (envelope.operation === 'textApply')
+        result = await this.textCaseHost.apply(envelope.payload.plan as unknown as TextChangePlan);
       else if (envelope.operation === 'readSelectedMetadata')
         result = await this.readSelectedMetadata();
       else if (envelope.operation === 'insert')

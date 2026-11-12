@@ -27,6 +27,7 @@ it('keeps Photoshop manifests publishable with one host and separate compatibili
     readFileSync('apps/photoshop-uxp/manifest-webview.json', 'utf8'),
   ) as UxpManifest;
   expect(native.id).toBe(enhanced.id);
+  expect(native.id).toBe('8941323d');
   expect(native.host).toEqual({ app: 'PS', minVersion: '26.0.0', data: { apiVersion: 2 } });
   expect(enhanced.host).toEqual({ app: 'PS', minVersion: '26.0.0', data: { apiVersion: 2 } });
   expect(native.requiredPermissions).toEqual({ localFileSystem: 'request' });
@@ -64,9 +65,7 @@ it('keeps the Illustrator CEP runtime floor independent of annual aliases', () =
   const xml = new JSDOM(readFileSync('apps/illustrator-cep/CSXS/manifest.xml', 'utf8'), {
     contentType: 'application/xml',
   });
-  expect(xml.window.document.documentElement.getAttribute('ExtensionBundleId')).toBe(
-    'com.toyshop.illustrator',
-  );
+  expect(xml.window.document.documentElement.getAttribute('ExtensionBundleId')).toBe('206252');
   const listed = xml.window.document.querySelector('ExtensionList > Extension')!;
   const dispatched = xml.window.document.querySelector('DispatchInfoList > Extension')!;
   expect(listed.getAttribute('Id')).toBe(dispatched.getAttribute('Id'));

@@ -100,7 +100,7 @@ try {
   $PayloadDir = Join-Path $root 'payload'
   $ArchivePath = Join-Path $root 'AstMatrix.ccx'
   [IO.Directory]::CreateDirectory($PayloadDir) | Out-Null
-  [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"7d1a0f42","version":"0.1.2"}')
+  [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"8941323d","version":"0.1.2"}')
   [IO.File]::WriteAllText((Join-Path $PayloadDir 'index.js'), '// fixture')
   $entries = @('manifest.json', 'index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
   Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
@@ -240,7 +240,7 @@ try {
     & {
       $previous = $state
       $AppVersion = '0.1.3'
-      [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"7d1a0f42","version":"0.1.3"}')
+      [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"8941323d","version":"0.1.3"}')
       [IO.File]::WriteAllText((Join-Path $PayloadDir 'index.js'), '// upgraded')
       $entries = @('manifest.json', 'index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
       Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
@@ -249,7 +249,7 @@ try {
       Assert (!(Test-Path (Join-Path $previous.path 'manifest.json'))) 'old version files cleaned after upgrade'
       Remove-OwnedFiles $upgraded
     }
-    [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"7d1a0f42","version":"0.1.2"}')
+    [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"8941323d","version":"0.1.2"}')
     [IO.File]::WriteAllText((Join-Path $PayloadDir 'index.js'), '// fixture')
     $entries = @('manifest.json', 'index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
     Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)
@@ -288,7 +288,7 @@ try {
       $PayloadDir = Join-Path $scenarioRoot 'payload'
       function Get-PluginDestination($Version) { return Join-Path $scenarioRoot "plugin-$Version" }
       [IO.Directory]::CreateDirectory((Join-Path $PayloadDir 'webview/assets')) | Out-Null
-      [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"7d1a0f42","version":"0.1.2"}')
+      [IO.File]::WriteAllText((Join-Path $PayloadDir 'manifest.json'), '{"id":"8941323d","version":"0.1.2"}')
       [IO.File]::WriteAllText((Join-Path $PayloadDir 'webview/assets/index.js'), '// nested fixture')
       $entries = @('manifest.json', 'webview/assets/index.js') | ForEach-Object { @{ path = $_; sha256 = (Get-FileHash (Join-Path $PayloadDir $_)).Hash } }
       Write-JsonFile (Join-Path $PayloadDir 'payload-files.json') @($entries)

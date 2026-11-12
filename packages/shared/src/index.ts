@@ -48,4 +48,13 @@ export class AstMatrixError extends Error {
 export const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-export { PROJECT_URL, PROJECT_VERSION, LICENSE_URL, ISSUES_URL } from './project';
+export {
+  PROJECT_URL,
+  PROJECT_VERSION,
+  LICENSE_URL,
+  ISSUES_URL,
+  TOYSHOP_PROJECT_URL,
+  TOYSHOP_ISSUES_URL,
+  isAllowedExternalLink,
+} from './project';
+export { openSourceProjects } from './open-source-projects';

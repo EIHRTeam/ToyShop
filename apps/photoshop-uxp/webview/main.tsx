@@ -4,6 +4,7 @@ import { AstMatrixApplicationService } from '@astmatrix/application';
 import { lazyBwipProvider } from '@astmatrix/barcode-core/lazy';
 import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
 import { ToyshopPanel } from '@toyshop/ui-react';
+import { createRemoteTextCaseHost } from '@toyshop/module-text-case';
 import { createWebviewAdapter } from '../src/webview-client';
 import type { WebviewClientWindow } from '../src/webview-client';
 import '@astmatrix/ui-react/styles.css';
@@ -19,6 +20,7 @@ try {
   )
     throw new Error('WebView 缺少必需的 Web API，请使用原生面板');
   const { adapter, transport } = createWebviewAdapter(window as unknown as WebviewClientWindow);
+  const textCaseHost = createRemoteTextCaseHost(transport);
   void adapter.refresh().catch(console.error);
   const timer = setInterval(() => {
     void adapter.refresh().catch(console.error);
@@ -37,7 +39,7 @@ try {
         hostLocale={hostLocale}
         openExternal={(url) => transport.openExternal(url)}
       >
-        <ToyshopPanel astmatrix={AstMatrixPanel} />
+        <ToyshopPanel astmatrix={AstMatrixPanel} textCaseHost={textCaseHost} />
       </AstMatrixProviders>
     );
   }

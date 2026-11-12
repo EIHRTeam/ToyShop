@@ -28,7 +28,7 @@ export async function releaseVersion(root = repository) {
   const cep = await readFile(path.join(root, 'apps/illustrator-cep/CSXS/manifest.xml'), 'utf8');
   assert.equal(
     cep.match(/ExtensionBundleId="([^"]+)"/)?.[1],
-    'com.toyshop.illustrator',
+    '206252',
     'Illustrator Adobe Exchange bundle ID mismatch',
   );
   const versions = [
@@ -43,6 +43,7 @@ export async function releaseVersion(root = repository) {
     const manifest = JSON.parse(
       await readFile(path.join(root, 'apps/photoshop-uxp', name), 'utf8'),
     );
+    assert.equal(manifest.id, '8941323d', `Photoshop ${name} ID mismatch`);
     assert.equal(manifest.version, version, `Photoshop ${name} version mismatch`);
   }
   return version;

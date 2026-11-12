@@ -106,6 +106,126 @@
             if ((g.kind === 'path' || g.kind === 'polygon') && g.fillRule !== 'nonzero' && g.fillRule !== 'evenodd') throw api.error('INVALID_INPUT', '无效填充规则');
         }
     }
+    function textSignature(range) {
+        var output = [], chars = range.characters, c, a, p, j;
+        function paint(value) {
+            if (!value) return '';
+            if (value.typename === 'RGBColor') return [value.red, value.green, value.blue];
+            if (value.typename === 'CMYKColor') return [value.cyan, value.magenta, value.yellow, value.black];
+            if (value.typename === 'GrayColor') return [value.gray];
+            if (value.typename === 'SpotColor') return [value.spot.name, value.tint];
+            return value.typename;
+        }
+        for (j = 0; j < chars.length; j++) {
+            c = chars[j]; a = c.characterAttributes; p = c.paragraphAttributes;
+            output.push([a.textFont ? a.textFont.name : '', a.size, a.tracking, a.horizontalScale, a.verticalScale, a.baselineShift, a.capitalization, paint(a.fillColor), paint(a.strokeColor), p.justification, p.leftIndent, p.rightIndent, p.spaceBefore, p.spaceAfter]);
+        }
+        return api.json.stringify(output);
+    }
+    function textScan(scope, includeHidden) {
+        var state = api.snapshot(), doc = app.documents.length ? app.activeDocument : null;
+        if (!doc) throw api.error('NO_DOCUMENT', '请先打开文档');
+        var selected = doc.selection || [], roots = scope === 'selected' ? selected : doc.textFrames;
+        var board = scope === 'area' ? doc.artboards[doc.artboards.getActiveArtboardIndex()].artboardRect : null;
+        var ids = [], targets = [], seen = {}, i, characters = 0;
+        function storyOf(item) {
+            try { return item.story || (item.textRange && item.textRange.story) || null; } catch (error) { return null; }
+        }
+        function idOf(item) {
+            var story = storyOf(item), j;
+            if (story && story.textFrames && story.textFrames.length && story.textFrames[0].uuid)
+                return 'story-u-' + story.textFrames[0].uuid;
+            if (story) for (j = 0; j < doc.stories.length; j++) if (doc.stories[j] === story) return 'story-' + j;
+            return item.uuid ? 'frame-' + item.uuid : 'frame-' + item.name;
+        }
+        function visit(item, hidden, locked) {
+            if (!item) return;
+            var parent = item.parent;
+            while (parent && parent.typename !== 'Document') {
+                hidden = hidden || parent.hidden === true || parent.visible === false;
+                locked = locked || parent.locked === true;
+                parent = parent.parent;
+            }
+            hidden = hidden || item.hidden === true || item.visible === false;
+            locked = locked || item.locked === true;
+            if (item.typename === 'Layer') { hidden = hidden || item.visible === false; locked = locked || item.locked === true; }
+            if (item.typename === 'TextRange') {
+                var selectedStory = storyOf(item), selectedFrame;
+                if (selectedStory) for (var f = 0; f < doc.textFrames.length; f++) {
+                    selectedFrame = doc.textFrames[f];
+                    if (storyOf(selectedFrame) === selectedStory) { visit(selectedFrame, hidden, locked); return; }
+                }
+                if (item.parent) visit(item.parent, hidden, locked);
+                return;
+            }
+            if (item.typename === 'TextFrame') {
+                var id = idOf(item), story = storyOf(item), range = story ? story.textRange : item.textRange, reason = null, fingerprint = '';
+                if (board) {
+                    var bounds = item.geometricBounds;
+                    if (!bounds || bounds[2] <= board[0] || bounds[0] >= board[2] || bounds[1] <= board[3] || bounds[3] >= board[1]) return;
+                    if (bounds[0] < board[0] || bounds[2] > board[2] || bounds[1] > board[1] || bounds[3] < board[3] || (story && story.textFrames && story.textFrames.length > 1)) reason = 'read-only';
+                }
+                if (seen['$' + id]) return; seen['$' + id] = true;
+                characters += range.contents.length;
+                if (targets.length >= 10000 || characters > 1000000) throw api.error('UNSUPPORTED_FEATURE', '文字扫描超过单次处理上限，请缩小选区');
+                try { fingerprint = textSignature(range); } catch (fontError) { reason = 'missing-font'; }
+                if (range.characters.length !== range.contents.length) reason = 'rich-text';
+                if (locked) reason = 'locked'; else if (hidden && !includeHidden) reason = 'hidden';
+                targets.push({ id: id, name: item.name || id, text: range.contents, styleFingerprint: fingerprint, skipReason: reason });
+                return;
+            }
+            if (item.pageItems) for (var k = 0; k < item.pageItems.length; k++) visit(item.pageItems[k], hidden, locked);
+        }
+        for (i = 0; i < selected.length; i++) ids.push(idOf(selected[i]));
+        ids.sort();
+        for (i = 0; i < roots.length; i++) visit(roots[i], false, false);
+        return { documentId: state.documentId, revision: String(state.revision), scope: scope, includeHidden: includeHidden, selectionFingerprint: ids.join('|'), targets: targets };
+    }
+    function textApply(plan) {
+        var scan = textScan(plan.scope, plan.includeHidden), byId = {}, i, j, change, target, doc = app.activeDocument, story, range, frame, count = 0;
+        if (scan.documentId !== plan.documentId || scan.revision !== plan.revision ||
+            (plan.scope === 'selected' && scan.selectionFingerprint !== plan.selectionFingerprint)) throw api.error('DOCUMENT_CHANGED', '文档或选区已变化，请重试');
+        for (i = 0; i < scan.targets.length; i++) byId['$' + scan.targets[i].id] = scan.targets[i];
+        for (i = 0; i < plan.changes.length; i++) {
+            change = plan.changes[i]; target = byId['$' + change.id];
+            if (!target || target.skipReason || target.text !== change.before || target.styleFingerprint !== change.styleFingerprint || change.before.length !== change.after.length)
+                throw api.error('DOCUMENT_CHANGED', '文字或样式已变化，请重试');
+            for (j = 0; j < change.before.length; j++) if (change.before.charAt(j) !== change.after.charAt(j)) {
+                var oldChar = change.before.charAt(j), newChar = change.after.charAt(j);
+                if (!/[A-Za-z]/.test(oldChar) || !/[A-Za-z]/.test(newChar) || oldChar.toLowerCase() !== newChar.toLowerCase() ||
+                    (plan.operation === 'upper' && newChar !== oldChar.toUpperCase()) ||
+                    (plan.operation === 'lower' && newChar !== oldChar.toLowerCase())) throw api.error('INVALID_INPUT', '文字计划包含非大小写变更');
+            }
+        }
+        var applied = [];
+        try {
+            for (i = 0; i < plan.changes.length; i++) {
+                change = plan.changes[i]; range = null;
+                if (change.id.indexOf('story-') === 0) {
+                    var storyKey = change.id.substr(6);
+                    if (/^\d+$/.test(storyKey)) { story = doc.stories[Number(storyKey)]; if (story) range = story.textRange; }
+                    else for (j = 0; j < doc.textFrames.length; j++) {
+                        frame = doc.textFrames[j]; story = frame.story;
+                        if (story && story.textFrames && story.textFrames.length && 'u-' + story.textFrames[0].uuid === storyKey) { range = story.textRange; break; }
+                    }
+                }
+                else for (j = 0; j < doc.textFrames.length; j++) { frame = doc.textFrames[j]; if ('frame-' + (frame.uuid || frame.name) === change.id) { range = frame.textRange; break; } }
+                if (!range || range.contents !== change.before) throw api.error('DOCUMENT_CHANGED', '文字对象已变化');
+                applied.push({ range: range, before: change.before });
+                for (j = 0; j < change.after.length; j++) if (change.after.charAt(j) !== change.before.charAt(j)) range.characters[j].contents = change.after.charAt(j);
+                if (range.contents !== change.after) throw api.error('UNKNOWN_HOST_ERROR', '文字写回未通过校验');
+                if (textSignature(range) !== change.styleFingerprint) throw api.error('UNSUPPORTED_FEATURE', '写入后样式变化，已恢复原文');
+                count++;
+            }
+        } catch (failure) {
+            for (i = applied.length - 1; i >= 0; i--) {
+                range = applied[i].range;
+                try { for (j = 0; j < applied[i].before.length; j++) if (range.characters[j].contents !== applied[i].before.charAt(j)) range.characters[j].contents = applied[i].before.charAt(j); } catch (rollback) { throw api.error('ROLLBACK_FAILED', '文字写入失败且恢复原文失败'); }
+            }
+            throw failure;
+        }
+        return { changed: count, failed: [], undoGrouped: false };
+    }
     api.dispatch = function (request) {
         var id = request && request.requestId;
         try {
@@ -129,6 +249,15 @@
                         }
                     }
                 }
+            } else if (request.operation === 'textScan') {
+                if ((payload.scope !== 'selected' && payload.scope !== 'area' && payload.scope !== 'document') || typeof payload.includeHidden !== 'boolean') throw api.error('INVALID_INPUT', '无效文字扫描参数');
+                result = textScan(payload.scope, payload.includeHidden);
+            } else if (request.operation === 'textApply') {
+                if (!payload.plan || (payload.plan.scope !== 'selected' && payload.plan.scope !== 'area' && payload.plan.scope !== 'document') ||
+                    (payload.plan.operation !== 'upper' && payload.plan.operation !== 'lower' && payload.plan.operation !== 'sentence' && payload.plan.operation !== 'restore') ||
+                    (payload.plan.operation === 'restore' && payload.plan.sourceOperation !== 'upper' && payload.plan.sourceOperation !== 'lower' && payload.plan.sourceOperation !== 'sentence') ||
+                    typeof payload.plan.includeHidden !== 'boolean' || !(payload.plan.changes instanceof Array) || payload.plan.changes.length > 10000) throw api.error('INVALID_INPUT', '无效文字变更计划');
+                result = textApply(payload.plan);
             } else if (request.operation === 'insert') {
                 for (key in payload) if (payload.hasOwnProperty(key) && key !== 'scene' && key !== 'documentId' && key !== 'documentRevision' && key !== 'placement') throw api.error('INVALID_INPUT', '未知插入参数');
                 if (payload.placement !== 'center' && payload.placement !== 'selection') throw api.error('INVALID_INPUT', '无效定位');

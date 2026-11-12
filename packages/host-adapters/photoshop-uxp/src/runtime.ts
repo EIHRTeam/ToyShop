@@ -4,6 +4,10 @@ export interface PsLayer {
   name: string;
   opacity: number;
   parent?: PsLayer;
+  visible?: boolean;
+  locked?: boolean;
+  layers?: PsLayer[];
+  textItem?: { contents: string };
   boundsNoEffects: { left: number; top: number; right: number; bottom: number };
 }
 export interface PsPoint {
@@ -24,6 +28,7 @@ export interface PsDocument {
   resolution: number;
   mode: unknown;
   activeLayers: PsLayer[];
+  layers?: PsLayer[];
   pathItems: { add: (name: string, paths: PsSubpath[]) => Promise<unknown> };
   createLayerGroup: (options: { name: string; fromLayers: PsLayer[] }) => Promise<PsLayer>;
 }

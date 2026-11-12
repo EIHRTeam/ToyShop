@@ -20,6 +20,7 @@
     "@astmatrix/ui-react": "workspace:*",
     "@astmatrix/ui-uxp": "workspace:*",
     "@astmatrix/vector-ir": "workspace:*",
+    "@toyshop/module-text-case": "workspace:*",
     "@toyshop/ui-react": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

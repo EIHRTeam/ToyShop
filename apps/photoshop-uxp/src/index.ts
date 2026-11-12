@@ -102,6 +102,7 @@ const startNative = () => {
       root: root as unknown as UxpElement,
       service,
       adapter,
+      textCaseHost: adapter.textCaseHost,
       previewSvg,
       exportSvg,
     });

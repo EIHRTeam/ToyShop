@@ -164,7 +164,7 @@ try {
         [IO.Directory]::CreateDirectory((Join-Path $payload 'CSXS')) | Out-Null
         [IO.File]::WriteAllText((Join-Path $payload 'CSXS/manifest.xml'), "<ExtensionManifest ExtensionBundleVersion=`"$version`" />")
       } else {
-        [IO.File]::WriteAllText((Join-Path $payload 'manifest.json'), "{`"id`":`"7d1a0f42`",`"version`":`"$version`"}")
+        [IO.File]::WriteAllText((Join-Path $payload 'manifest.json'), "{`"id`":`"8941323d`",`"version`":`"$version`"}")
       }
       [IO.File]::WriteAllText((Join-Path $payload 'index.js'), "// $fixture $version")
       $entries = @(Get-ChildItem $payload -Recurse -File | ForEach-Object {

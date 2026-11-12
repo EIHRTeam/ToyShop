@@ -40,7 +40,7 @@ function Get-State {
 
 function Get-PluginDestination($Version) {
   if ($HostName -eq 'Illustrator') { return Join-Path $env:APPDATA 'Adobe\CEP\extensions\AstMatrix' }
-  return Join-Path $env:APPDATA "Adobe\UXP\Plugins\External\7d1a0f42_$Version"
+  return Join-Path $env:APPDATA "Adobe\UXP\Plugins\External\8941323d_$Version"
 }
 
 function Assert-Registration($State) {
@@ -304,7 +304,7 @@ function Get-InstalledPlugins {
       $manifest = Join-Path $folder.FullName 'manifest.json'
       if (!(Test-Path -LiteralPath $manifest)) { continue }
       $data = Get-Content -LiteralPath $manifest -Raw -Encoding UTF8 | ConvertFrom-Json
-      if ($data.id -eq '7d1a0f42') { [pscustomobject]@{ version = $data.version; path = $folder.FullName } }
+      if ($data.id -eq '8941323d') { [pscustomobject]@{ version = $data.version; path = $folder.FullName } }
     }
   }
 }
@@ -314,7 +314,7 @@ function Test-AdobeRegistration {
   if (!(Test-Path -LiteralPath $directory)) { return $false }
   # Read-only detection. This private Adobe data is NEVER edited by this installer.
   foreach ($file in (Get-ChildItem -LiteralPath $directory -Filter '*.json' -File -Recurse)) {
-    if ((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8) -match '"7d1a0f42(?:_[^"]*)?"') { return $true }
+    if ((Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8) -match '"8941323d(?:_[^"]*)?"') { return $true }
   }
   return $false
 }

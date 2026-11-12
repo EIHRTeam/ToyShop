@@ -95,7 +95,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 function identifier(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value.length <= 256;
 }
-export type HostOperation = 'capabilities' | 'insert' | 'update' | 'readSelectedMetadata';
+export type HostOperation =
+  | 'capabilities'
+  | 'insert'
+  | 'update'
+  | 'readSelectedMetadata'
+  | 'textScan'
+  | 'textApply';
 export interface HostEnvelope {
   requestId: string;
   operation: HostOperation;
@@ -154,7 +160,7 @@ export function validateEnvelope(value: unknown): asserts value is HostEnvelope 
     ) ||
     !identifier(value.requestId) ||
     value.payloadVersion !== HOST_PROTOCOL_VERSION ||
-    !['capabilities', 'insert', 'update', 'readSelectedMetadata'].includes(
+    !['capabilities', 'insert', 'update', 'readSelectedMetadata', 'textScan', 'textApply'].includes(
       String(value.operation),
     ) ||
     !isRecord(value.payload)
@@ -182,6 +188,39 @@ export function validateEnvelope(value: unknown): asserts value is HostEnvelope 
     } catch (error) {
       throw new HostError('INVALID_INPUT', errorMessage(error));
     }
+  } else if (value.operation === 'textScan') {
+    if (
+      Object.keys(payload).some((key) => !['scope', 'includeHidden'].includes(key)) ||
+      !['selected', 'area', 'document'].includes(String(payload.scope)) ||
+      typeof payload.includeHidden !== 'boolean'
+    )
+      throw new HostError('INVALID_INPUT', '无效文字扫描参数');
+  } else if (value.operation === 'textApply') {
+    const plan = payload.plan;
+    if (
+      Object.keys(payload).length !== 1 ||
+      !isRecord(plan) ||
+      !identifier(plan.documentId) ||
+      !identifier(plan.revision) ||
+      !['selected', 'area', 'document'].includes(String(plan.scope)) ||
+      typeof plan.includeHidden !== 'boolean' ||
+      typeof plan.selectionFingerprint !== 'string' ||
+      !['upper', 'lower', 'sentence', 'restore'].includes(String(plan.operation)) ||
+      (plan.operation === 'restore' &&
+        !['upper', 'lower', 'sentence'].includes(String(plan.sourceOperation))) ||
+      !Array.isArray(plan.changes) ||
+      plan.changes.length > 10000 ||
+      plan.changes.some(
+        (change: unknown) =>
+          !isRecord(change) ||
+          !identifier(change.id) ||
+          typeof change.before !== 'string' ||
+          typeof change.after !== 'string' ||
+          change.before.length !== change.after.length ||
+          typeof change.styleFingerprint !== 'string',
+      )
+    )
+      throw new HostError('INVALID_INPUT', '无效文字变更计划');
   } else if (Object.keys(payload).length) throw new HostError('INVALID_INPUT', '该操作不接受参数');
 }
 export const HOST_ERROR_CODES: readonly HostErrorCode[] = [

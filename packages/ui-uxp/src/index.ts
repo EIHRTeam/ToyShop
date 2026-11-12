@@ -10,6 +10,13 @@ import type { CodeTab } from '@astmatrix/symbology-catalog';
 import type { HostAdapter } from '@astmatrix/host-contract';
 import { HostError } from '@astmatrix/host-contract';
 import { errorMessage } from '@astmatrix/shared';
+import { createTextChangePlan, createTextRestorePlan } from '@toyshop/module-text-case';
+import type {
+  TextCaseHost,
+  TextCaseOperation,
+  TextCaseScope,
+  TextChangePlan,
+} from '@toyshop/module-text-case';
 /** The supported UXP DOM subset. No browser APIs, React, storage or canvas assumed. */
 export interface UxpElement {
   textContent: string | null;
@@ -33,6 +40,7 @@ export interface NativePanelOptions {
   root: UxpElement;
   service: AstMatrixApplicationService;
   adapter: HostAdapter;
+  textCaseHost?: TextCaseHost;
   previewSvg: (svg: string, isCurrent: () => boolean) => Promise<string>;
   exportSvg: (svg: string, name: string) => Promise<void>;
 }
@@ -111,6 +119,126 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
   controls.appendChild(insertButton);
   root.appendChild(controls);
   root.appendChild(restoreButton);
+  if (options.textCaseHost) {
+    const caseHost = options.textCaseHost;
+    const caseSection = node('section');
+    caseSection.appendChild(node('h3', '英文大小写转换'));
+    const operationLabel = node('label', '转换方式');
+    const operationSelect = node('select');
+    for (const [value, label] of [
+      ['upper', 'UPPERCASE'],
+      ['lower', 'lowercase'],
+    ]) {
+      const option = node('option', label);
+      option.value = value!;
+      operationSelect.appendChild(option);
+    }
+    operationSelect.value = 'upper';
+    operationLabel.appendChild(operationSelect);
+    caseSection.appendChild(operationLabel);
+    const scopeLabel = node('label', '处理范围');
+    const scopeSelect = node('select');
+    for (const [value, label] of [
+      ['selected', '选中对象'],
+      ['document', '整个文档'],
+    ]) {
+      const option = node('option', label);
+      option.value = value!;
+      scopeSelect.appendChild(option);
+    }
+    scopeSelect.value = 'selected';
+    scopeLabel.appendChild(scopeSelect);
+    caseSection.appendChild(scopeLabel);
+    const convertButton = node('button', '转换');
+    const undoButton = node('button', '撤销');
+    const caseStatus = node('p');
+    undoButton.disabled = true;
+    caseSection.appendChild(convertButton);
+    caseSection.appendChild(undoButton);
+    caseSection.appendChild(caseStatus);
+    root.appendChild(caseSection);
+    let undoPlan: TextChangePlan | null = null;
+    let caseBusy = false;
+    const clearResult = () => {
+      caseStatus.textContent = '';
+      caseStatus.className = '';
+    };
+    const fail = (error: unknown) => {
+      if (disposed) return;
+      caseStatus.className = 'field-error';
+      caseStatus.textContent = errorMessage(error);
+    };
+    operationSelect.addEventListener('change', clearResult);
+    scopeSelect.addEventListener('change', clearResult);
+    convertButton.addEventListener('click', () => {
+      if (caseBusy || disposed) return;
+      caseBusy = true;
+      convertButton.disabled = true;
+      undoButton.disabled = true;
+      operationSelect.disabled = true;
+      scopeSelect.disabled = true;
+      clearResult();
+      void caseHost
+        .scan(scopeSelect.value as TextCaseScope, false)
+        .then(async (scan) => {
+          if (disposed) return undefined;
+          const plan = createTextChangePlan(scan, operationSelect.value as TextCaseOperation);
+          if (!plan.changes.length) {
+            caseStatus.textContent = `已修改 0 项；跳过 ${plan.skipped.length} 项`;
+            return undefined;
+          }
+          undoPlan = null;
+          const report = await caseHost.apply(plan);
+          if (disposed) return undefined;
+          if (report.changed === plan.changes.length && !report.failed.length)
+            undoPlan = createTextRestorePlan(plan);
+          caseStatus.textContent = `已修改 ${report.changed} 项；跳过 ${plan.skipped.length} 项；失败 ${report.failed.length} 项`;
+          return undefined;
+        })
+        .catch(fail)
+        .finally(() => {
+          caseBusy = false;
+          if (disposed) return;
+          convertButton.disabled = false;
+          undoButton.disabled = !undoPlan;
+          operationSelect.disabled = false;
+          scopeSelect.disabled = false;
+        });
+    });
+    undoButton.addEventListener('click', () => {
+      if (caseBusy || !undoPlan || disposed) return;
+      caseBusy = true;
+      convertButton.disabled = true;
+      undoButton.disabled = true;
+      operationSelect.disabled = true;
+      scopeSelect.disabled = true;
+      const plan = undoPlan;
+      clearResult();
+      void caseHost
+        .apply(plan)
+        .then(
+          (report) => {
+            if (!disposed) {
+              undoPlan = null;
+              caseStatus.textContent = `已撤销 ${report.changed} 项`;
+            }
+            return undefined;
+          },
+          (error: unknown) => {
+            fail(error);
+            return undefined;
+          },
+        )
+        .finally(() => {
+          caseBusy = false;
+          if (disposed) return;
+          convertButton.disabled = false;
+          undoButton.disabled = !undoPlan;
+          operationSelect.disabled = false;
+          scopeSelect.disabled = false;
+        });
+    });
+  }
   const fieldErrors = new Map<string, UxpElement>();
   const renderControls = () => {
     clear(symbols);

@@ -1,9 +1,8 @@
 import { HostError, validateEnvelope } from '@astmatrix/host-contract';
 import type { HostEnvelope, HostResponse } from '@astmatrix/host-contract';
 import {
-  ISSUES_URL,
-  LICENSE_URL,
   PROJECT_URL,
+  isAllowedExternalLink,
   errorMessage,
   stableStringify,
 } from '@astmatrix/shared';
@@ -118,7 +117,7 @@ export class WebviewHostBridge {
         response = await this.adapter.dispatch(m.envelope, isCurrent);
       } else if (m.type === 'openProject' || m.type === 'openExternal') {
         const url = m.type === 'openProject' ? PROJECT_URL : m.url;
-        if (url !== PROJECT_URL && url !== LICENSE_URL && url !== ISSUES_URL)
+        if (typeof url !== 'string' || !isAllowedExternalLink(url))
           throw new HostError('INVALID_INPUT', '不支持的外部链接');
         if (!this.environment.openExternal)
           throw new HostError('UNSUPPORTED_FEATURE', '无法打开外部链接');

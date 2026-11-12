@@ -210,7 +210,7 @@ function payload(host: 'Illustrator' | 'Photoshop') {
     files.set(
       'CSXS/manifest.xml',
       Buffer.from(
-        '<ExtensionManifest ExtensionBundleVersion="0.1.2"><Host Version="[27.0,30.9]" /></ExtensionManifest>',
+        '<ExtensionManifest ExtensionBundleId="206252" ExtensionBundleVersion="0.1.2"><Host Version="[27.0,30.9]" /></ExtensionManifest>',
       ),
     );
   else
@@ -218,7 +218,7 @@ function payload(host: 'Illustrator' | 'Photoshop') {
       'manifest.json',
       Buffer.from(
         JSON.stringify({
-          id: '7d1a0f42',
+          id: '8941323d',
           version: '0.1.2',
           host: { app: 'PS', minVersion: '26.0.0' },
           requiredPermissions: { webview: { enableMessageBridge: 'localOnly' } },

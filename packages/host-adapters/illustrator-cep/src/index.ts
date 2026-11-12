@@ -111,7 +111,10 @@ export class CepTransport implements HostTransport {
   }
 }
 export class IllustratorCepAdapter extends RemoteHostAdapter {
+  readonly textTransport: CepTransport;
   constructor(cs: CSInterfaceLike) {
-    super('illustrator-cep', new CepTransport(cs));
+    const transport = new CepTransport(cs);
+    super('illustrator-cep', transport);
+    this.textTransport = transport;
   }
 }

@@ -1,8 +1,9 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import type { AstMatrixApplicationService } from '@astmatrix/application';
 import type { FigmaPluginAdapter, FigmaTransport } from '@astmatrix/host-adapter-figma-plugin';
 import { AstMatrixPanel, AstMatrixProviders, useLocale } from '@astmatrix/ui-react';
 import { ToyshopPanel } from '@toyshop/ui-react';
+import { createRemoteTextCaseHost } from '@toyshop/module-text-case';
 
 export function FigmaPanel({
   service,
@@ -19,6 +20,7 @@ export function FigmaPanel({
   debounceMs?: number;
   showDiagnostics?: boolean;
 }) {
+  const [textCaseHost] = useState(() => createRemoteTextCaseHost(transport, true));
   const connection = useSyncExternalStore(
     transport.subscribeConnection,
     transport.getConnectionSnapshot,
@@ -32,7 +34,7 @@ export function FigmaPanel({
       openExternal={(url) => transport.openExternal(url)}
       hostStatusMessage={connection.message}
     >
-      <ToyshopPanel astmatrix={AstMatrixPanel} />
+      <ToyshopPanel astmatrix={AstMatrixPanel} textCaseHost={textCaseHost} />
       {showDiagnostics && connection.status === 'error' ? (
         <ConnectionDiagnostic details={connection.details ?? ''} />
       ) : null}

@@ -5,7 +5,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { FigmaPluginAdapter, FigmaTransport } from '@astmatrix/host-adapter-figma-plugin';
 import { FigmaPluginRuntime } from '@astmatrix/host-adapter-figma-plugin/runtime';
-import { ISSUES_URL, LICENSE_URL, PROJECT_URL } from '@astmatrix/shared';
+import { LICENSE_URL, TOYSHOP_ISSUES_URL, TOYSHOP_PROJECT_URL } from '@astmatrix/shared';
 import { FigmaPanel } from '../../apps/figma-plugin/ui/panel';
 import { fakeFigma } from '../fixtures/figma';
 
@@ -63,6 +63,7 @@ function mountFigmaPanel(sourceKind: 'null' | 'other' = 'other', showDiagnostics
       />
     </StrictMode>,
   );
+  fireEvent.click(screen.getByRole('button', { name: '二维码 / 条形码生成' }));
   return host;
 }
 
@@ -76,8 +77,11 @@ it.each(['null', 'other'] as const)(
     await waitFor(() => expect(insert.disabled).toBe(false));
     fireEvent.click(insert);
     await waitFor(() =>
-      expect(document.querySelector('.success')?.textContent).toContain('插入成功'),
+      expect(
+        document.querySelector('[data-sonner-toast][data-type="success"]')?.textContent,
+      ).toContain('插入成功'),
     );
+    expect(document.querySelectorAll('[data-sonner-toast][data-type="success"]')).toHaveLength(1);
     expect(host.mock.currentPage.children).toHaveLength(1);
     expect(host.mock.commitUndo).toHaveBeenCalledOnce();
   },
@@ -89,12 +93,12 @@ it.each(['null', 'other'] as const)(
     const host = mountFigmaPanel(sourceKind);
     // A click during startup should wait for the handshake, then reach figma.openExternal.
     fireEvent.click(screen.getByRole('link', { name: '打开 GitHub 仓库' }));
-    await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(PROJECT_URL));
+    await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(TOYSHOP_PROJECT_URL));
     fireEvent.click(screen.getByRole('button', { name: '关于' }));
     fireEvent.click(screen.getByRole('link', { name: 'Apache License, Version 2.0' }));
     await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(LICENSE_URL));
     fireEvent.click(screen.getByRole('link', { name: '反馈问题' }));
-    await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(ISSUES_URL));
+    await waitFor(() => expect(host.mock.openExternal).toHaveBeenCalledWith(TOYSHOP_ISSUES_URL));
     expect(host.mock.openExternal).toHaveBeenCalledTimes(3);
     expect(document.querySelector('[role="alert"]')).toBeNull();
   },

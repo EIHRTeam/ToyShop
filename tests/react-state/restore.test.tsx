@@ -1,4 +1,5 @@
 import { bwipProvider } from '@astmatrix/barcode-core';
+import { waitFor } from '@testing-library/dom';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -64,6 +65,10 @@ it('Web host UI keeps generation and insertion available without the selection r
   )!;
   expect(insert.disabled).toBe(false);
   await act(async () => insert.click());
-  expect(document.body.textContent).toContain('插入成功');
+  await waitFor(() =>
+    expect(
+      document.querySelector('[data-sonner-toast][data-type="success"]')?.textContent,
+    ).toContain('插入成功'),
+  );
   expect(document.body.textContent).not.toContain('模拟插入文档');
 });
