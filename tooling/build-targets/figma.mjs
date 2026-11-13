@@ -114,10 +114,10 @@ export async function buildFigma() {
       {
         schemaVersion: 1,
         target: 'figma-plugin',
-        developmentBuild: false,
+        developmentBuild: true,
         diagnosticsVisible: false,
         actualHost: 'not-run',
-        pluginIdConfigured: true,
+        pluginIdConfigured: false,
         lockSha256: sha(await readFile(path.join(root, 'pnpm-lock.yaml'))),
         artifacts,
       },

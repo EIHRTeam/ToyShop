@@ -44,6 +44,7 @@ export interface NativePanelOptions {
   previewSvg: (svg: string, isCurrent: () => boolean) => Promise<string>;
   exportSvg: (svg: string, name: string) => Promise<void>;
 }
+/** @deprecated Chinese-only compatibility fallback. New UI work belongs in the React panel. */
 export function mountNativePanel(options: NativePanelOptions): { dispose: () => void } {
   const { document, root, service, adapter } = options;
   const preview = new PreviewController(service, {
@@ -76,7 +77,7 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
   clear(root);
   root.className = 'astmatrix-native';
   root.appendChild(node('h2', 'ToyShop'));
-  root.appendChild(node('p', 'AstMatrix · Asset tools'));
+  root.appendChild(node('p', '条形码与二维码工具'));
   root.appendChild(node('p', '离线编码 · Photoshop 原生矢量'));
   const tabs = node('div'),
     buttonBar = node('button', '条形码'),
@@ -401,7 +402,7 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
   exportButton.addEventListener('click', () => {
     const state = preview.getSnapshot();
     if (state.status === 'ready')
-      void options.exportSvg(state.barcode.svg, `astmatrix-${symbolId}.svg`).catch((e) => {
+      void options.exportSvg(state.barcode.svg, `toyshop-${symbolId}.svg`).catch((e) => {
         status.textContent = errorMessage(e);
       });
   });
@@ -421,7 +422,7 @@ export function mountNativePanel(options: NativePanelOptions): { dispose: () => 
           host.revision !== adapter.getSnapshot().revision
         )
           throw new HostError('CANCELLED', '输入或文档已变化');
-        if (!metadata) throw new HostError('INVALID_INPUT', '请选择 AstMatrix 对象');
+        if (!metadata) throw new HostError('INVALID_INPUT', '请选择条码对象');
         const restored: GenerateRequest = service.restore(metadata);
         tab = getSymbology(restored.symbologyId).tab;
         symbolId = restored.symbologyId;

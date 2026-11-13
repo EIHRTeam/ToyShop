@@ -2,6 +2,7 @@ import { createContext, useContext, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import * as Dialog from 'radix-ui/dialog';
 import * as Popover from 'radix-ui/popover';
+import { useTranslation } from 'react-i18next';
 import {
   ISSUES_URL,
   LICENSE_URL,
@@ -132,12 +133,13 @@ function ExternalLink({
   );
 }
 const languages: { value: LanguagePreference; label: string }[] = [
-  { value: 'auto', label: 'Auto' },
   { value: 'zh-CN', label: '简体中文' },
   { value: 'en', label: 'English' },
 ];
 function LanguageMenu() {
-  const { preference, setPreference, t } = useLocale();
+  const { preference, setPreference } = useLocale();
+  const { t } = useTranslation();
+  const options = [{ value: 'auto' as const, label: t(($) => $.common.auto) }, ...languages];
   const [open, setOpen] = useState(false);
   const content = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -163,7 +165,7 @@ function LanguageMenu() {
             : event.key === 'ArrowUp'
               ? (current + items.length - 1) % items.length
               : event.key.length === 1
-                ? languages.findIndex((item) =>
+                ? options.findIndex((item) =>
                     item.label.toLowerCase().startsWith(event.key.toLowerCase()),
                   )
                 : -1;
@@ -178,8 +180,8 @@ function LanguageMenu() {
         ref={trigger}
         className="icon-button"
         aria-haspopup="menu"
-        aria-label={t('语言')}
-        title={t('语言')}
+        aria-label={t(($) => $.common.language)}
+        title={t(($) => $.common.language)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
             event.preventDefault();
@@ -197,7 +199,7 @@ function LanguageMenu() {
           align="end"
           sideOffset={8}
           collisionPadding={12}
-          aria-label={t('语言')}
+          aria-label={t(($) => $.common.language)}
           onKeyDown={navigate}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
@@ -210,7 +212,7 @@ function LanguageMenu() {
             }
           }}
         >
-          {languages.map((language) => (
+          {options.map((language) => (
             <button
               key={language.value}
               type="button"
@@ -232,14 +234,14 @@ function LanguageMenu() {
   );
 }
 export function HeaderActions({ product = astmatrixProduct }: { product?: HeaderProduct }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const [linkError, setLinkError] = useState<string | null>(null);
   return (
     <div className="header-actions">
       <LanguageMenu />
       <ExternalLink
         href={product.projectUrl}
-        label={t('打开 GitHub 仓库')}
+        label={t(($) => $.about.openGithub)}
         title="GitHub"
         className="icon-button"
         onError={setLinkError}
@@ -247,18 +249,20 @@ export function HeaderActions({ product = astmatrixProduct }: { product?: Header
         <img src={githubIcon} className="github-icon" alt="" />
       </ExternalLink>
       <Dialog.Root>
-        <Dialog.Trigger className="icon-button" aria-label={t('关于')} title={t('关于')}>
+        <Dialog.Trigger
+          className="icon-button"
+          aria-label={t(($) => $.common.about)}
+          title={t(($) => $.common.about)}
+        >
           <AboutIcon />
         </Dialog.Trigger>
         <Dialog.Portal>
           <Dialog.Overlay className="about-overlay" />
           <Dialog.Content className="about-dialog">
-            <Dialog.Title>{t(`关于 ${product.name}`)}</Dialog.Title>
-            <Dialog.Description>
-              {t('轻量而强大的多编码格式条形码与二维码生成器')}
-            </Dialog.Description>
+            <Dialog.Title>{t(($) => $.about.productTitle, { product: product.name })}</Dialog.Title>
+            <Dialog.Description>{t(($) => $.about.description)}</Dialog.Description>
             <p>
-              {t('版本')} v{PROJECT_VERSION}
+              {t(($) => $.about.version)} v{PROJECT_VERSION}
             </p>
             <p>
               Copyright © 2026 Endfield Industries Human Resource Team,
@@ -271,11 +275,9 @@ export function HeaderActions({ product = astmatrixProduct }: { product?: Header
             </p>
             {linkError === LICENSE_URL || linkError === product.issuesUrl ? (
               <div className="error" role="alert">
-                {t(
-                  linkError === LICENSE_URL
-                    ? '无法打开许可证链接，请在浏览器中访问：'
-                    : '无法打开反馈链接，请在浏览器中访问：',
-                )}{' '}
+                {linkError === LICENSE_URL
+                  ? t(($) => $.about.licenseOpenFailed)
+                  : t(($) => $.about.feedbackOpenFailed)}{' '}
                 {linkError}
               </div>
             ) : null}
@@ -283,14 +285,14 @@ export function HeaderActions({ product = astmatrixProduct }: { product?: Header
               <Dialog.Root>
                 <Dialog.Trigger className="about-link about-link-button">
                   <CodeIcon />
-                  <span>{t('开放源代码许可')}</span>
+                  <span>{t(($) => $.about.openSourceLicenses)}</span>
                   <ExternalArrowIcon />
                 </Dialog.Trigger>
                 <Dialog.Portal>
                   <Dialog.Overlay className="about-overlay open-source-overlay" />
                   <Dialog.Content className="about-dialog open-source-dialog">
-                    <Dialog.Title>{t('开放源代码许可')}</Dialog.Title>
-                    <Dialog.Description>{t('ToyShop 基于以下开源项目打造而成')}</Dialog.Description>
+                    <Dialog.Title>{t(($) => $.about.openSourceLicenses)}</Dialog.Title>
+                    <Dialog.Description>{t(($) => $.about.credits)}</Dialog.Description>
                     <div className="open-source-list">
                       {openSourceProjects.map((project) => (
                         <ExternalLink
@@ -308,17 +310,17 @@ export function HeaderActions({ product = astmatrixProduct }: { product?: Header
                     </div>
                     {openSourceProjects.some((project) => project.url === linkError) ? (
                       <div className="error" role="alert">
-                        {t('无法打开项目仓库，请在浏览器中访问：')} {linkError}
+                        {t(($) => $.about.projectOpenFailed)} {linkError}
                       </div>
                     ) : null}
-                    <Dialog.Close className="about-close">{t('关闭')}</Dialog.Close>
+                    <Dialog.Close className="about-close">{t(($) => $.common.close)}</Dialog.Close>
                   </Dialog.Content>
                 </Dialog.Portal>
               </Dialog.Root>
               <ExternalLink
                 className="about-link"
                 href={product.projectUrl}
-                label={t('打开 GitHub 仓库')}
+                label={t(($) => $.about.openGithub)}
                 title="GitHub"
                 onError={setLinkError}
               >
@@ -328,17 +330,17 @@ export function HeaderActions({ product = astmatrixProduct }: { product?: Header
               </ExternalLink>
               <ExternalLink className="about-link" href={product.issuesUrl} onError={setLinkError}>
                 <IssueIcon />
-                <span>{t('反馈问题')}</span>
+                <span>{t(($) => $.about.reportIssue)}</span>
                 <ExternalArrowIcon />
               </ExternalLink>
             </div>
-            <Dialog.Close className="about-close">{t('关闭')}</Dialog.Close>
+            <Dialog.Close className="about-close">{t(($) => $.common.close)}</Dialog.Close>
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
       {linkError === product.projectUrl ? (
         <p className="header-error" role="alert">
-          {t('无法打开 GitHub，请在浏览器中访问：')} {product.projectUrl}
+          {t(($) => $.about.githubOpenFailed)} {product.projectUrl}
         </p>
       ) : null}
     </div>

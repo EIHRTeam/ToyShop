@@ -27,7 +27,7 @@ window.addEventListener('beforeunload', () => {
   adapter.dispose();
 });
 const container = document.getElementById('root');
-if (!container) throw new Error('AstMatrix panel requires #root');
+if (!container) throw new Error('ToyShop panel requires #root');
 createRoot(container, {
   onUncaughtError: (error) => showPanelStartupError(container, error),
 }).render(

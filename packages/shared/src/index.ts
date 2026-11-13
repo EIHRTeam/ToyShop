@@ -1,4 +1,6 @@
 export const MM_TO_PT = 72 / 25.4;
+export { parseLocaleTag, supportedLocale } from './locale';
+export type { SupportedLocale } from './locale';
 export const mmToPt = (mm: number) => finite(mm) * MM_TO_PT;
 export const ptToMm = (pt: number) => finite(pt) / MM_TO_PT;
 export function finite(value: number): number {

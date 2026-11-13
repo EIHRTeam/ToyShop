@@ -41,7 +41,7 @@ it('opens modules from the home cards and returns to the home screen', () => {
   expect(document.querySelector('.toyshop-workspace')).toBeNull();
 
   fireEvent.click(screen.getByRole('button', { name: '二维码 / 条形码生成' }));
-  expect(screen.getByRole('region', { name: 'AstMatrix' })).toBeTruthy();
+  expect(screen.getByRole('region', { name: 'Barcode & QR Code' })).toBeTruthy();
   expect(screen.getByRole('tab', { name: '条形码' })).toBeTruthy();
   expect(document.querySelector('.astmatrix .brand')).toBeNull();
   expect(document.querySelectorAll('.brand')).toHaveLength(1);

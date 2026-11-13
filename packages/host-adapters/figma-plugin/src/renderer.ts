@@ -56,7 +56,7 @@ export function insertScene(
   try {
     const frame = api.createFrame();
     created.push(frame);
-    frame.name = `AstMatrix · ${scene.metadata.symbologyId}`;
+    frame.name = `ToyShop · ${scene.metadata.symbologyId}`;
     frame.layoutMode = 'NONE';
     frame.clipsContent = false;
     frame.strokes = [];

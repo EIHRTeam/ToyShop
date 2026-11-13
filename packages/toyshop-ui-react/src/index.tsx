@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import { toast } from 'sonner';
-import { errorMessage, TOYSHOP_ISSUES_URL, TOYSHOP_PROJECT_URL } from '@astmatrix/shared';
-import { BrandHeader, useLocale } from '@astmatrix/ui-react';
+import { useTranslation } from 'react-i18next';
+import { TOYSHOP_ISSUES_URL, TOYSHOP_PROJECT_URL } from '@astmatrix/shared';
+import { BrandHeader, translateError, translateMessage } from '@astmatrix/ui-react';
 import { ModuleRegistry } from '@toyshop/core';
 import { astmatrixModule } from '@toyshop/module-astmatrix';
 import {
@@ -14,10 +15,10 @@ import {
 import type {
   TextCaseHost,
   TextCaseOperation,
-  TextCaseScope,
   TextChangePlan,
   TextSkipReason,
 } from '@toyshop/module-text-case';
+import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 
 const toyshopModules = new ModuleRegistry([textCaseModule, astmatrixModule]);
 const toyshopProduct = {
@@ -42,13 +43,13 @@ export function ToyshopPanel({
   astmatrix: ComponentType<{ showHeader?: boolean }>;
   textCaseHost?: TextCaseHost;
 }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const [moduleId, setModuleId] = useState<string | null>(null);
   const [textUndoPlan, setTextUndoPlan] = useState<TextChangePlan | null>(null);
   const lastModuleId = useRef<string | null>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const current = moduleId ? toyshopModules.get(moduleId) : undefined;
-  const textCaseName = t('英文大小写转换');
+  const textCaseName = t(($) => $.textCase.title);
   const currentName = current?.id === textCaseModule.id ? textCaseName : current?.name;
 
   useEffect(() => {
@@ -67,8 +68,8 @@ export function ToyshopPanel({
               ref={backButton}
               className="toyshop-back"
               type="button"
-              aria-label={t('返回工具箱')}
-              title={t('返回工具箱')}
+              aria-label={t(($) => $.toolbox.back)}
+              title={t(($) => $.toolbox.back)}
               onClick={() => setModuleId(null)}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -98,7 +99,7 @@ export function ToyshopPanel({
         </section>
       ) : (
         <main className="toyshop-home">
-          <h2>{t('工具箱')}</h2>
+          <h2>{t(($) => $.toolbox.title)}</h2>
           <div className="toyshop-tool-grid">
             {toyshopModules.list().map((module) => (
               <button
@@ -118,7 +119,7 @@ export function ToyshopPanel({
                   {module.id === textCaseModule.id
                     ? textCaseName
                     : module.id === astmatrixModule.id
-                      ? t('二维码 / 条形码生成')
+                      ? t(($) => $.toolbox.barcodeTool)
                       : module.name}
                 </span>
                 <span className="toyshop-tool-arrow" aria-hidden="true">
@@ -142,9 +143,9 @@ function TextCaseWorkspace({
   undoPlan: TextChangePlan | null;
   setUndoPlan: (plan: TextChangePlan | null) => void;
 }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const [operation, setOperation] = useState<TextCaseOperation>('upper');
-  const [scope, setScope] = useState<TextCaseScope>('selected');
+  const [scope, setScope] = useState<'selected' | 'document'>('selected');
   const [includeHidden, setIncludeHidden] = useState(false);
   const [skipped, setSkipped] = useState<TextChangePlan['skipped']>([]);
   const [busy, setBusy] = useState(false);
@@ -161,7 +162,7 @@ function TextCaseWorkspace({
       const scan = await host.scan(scope, includeHidden);
       const plan = createTextChangePlan(scan, operation);
       if (!plan.changes.length) {
-        toast.info(`${t('已修改')} 0 ${t('项。')}`);
+        toast.info(t(($) => $.textCase.status.changed, { count: 0 }));
         setSkipped(plan.skipped);
         return;
       }
@@ -173,13 +174,17 @@ function TextCaseWorkspace({
           : null,
       );
       const message = result.failed.length
-        ? `${t('已修改')} ${result.changed} ${t('项；失败')} ${result.failed.length} ${t('项。')}`
-        : `${t('已修改')} ${result.changed} ${t('项。')}`;
+        ? t(($) => $.textCase.status.changedWithFailures, {
+            count: result.changed,
+            failed: result.failed.length,
+          })
+        : t(($) => $.textCase.status.changed, { count: result.changed });
       if (result.failed.length) toast.error(message);
       else toast.success(message);
       setSkipped(plan.skipped);
     } catch (cause) {
-      toast.error(errorMessage(cause));
+      console.error('[ToyShop] text conversion failed:', cause);
+      toast.error(translateError(t, cause));
     } finally {
       working.current = false;
       setBusy(false);
@@ -194,12 +199,16 @@ function TextCaseWorkspace({
       const result = await host.apply(undoPlan);
       setUndoPlan(null);
       const message = result.failed.length
-        ? `${t('已撤销')} ${result.changed} ${t('项；失败')} ${result.failed.length} ${t('项。')}`
-        : `${t('已撤销')} ${result.changed} ${t('项。')}`;
+        ? t(($) => $.textCase.status.restoredWithFailures, {
+            count: result.changed,
+            failed: result.failed.length,
+          })
+        : t(($) => $.textCase.status.restored, { count: result.changed });
       if (result.failed.length) toast.error(message);
       else toast.success(message);
     } catch (cause) {
-      toast.error(errorMessage(cause));
+      console.error('[ToyShop] text restoration failed:', cause);
+      toast.error(translateError(t, cause));
     } finally {
       working.current = false;
       setBusy(false);
@@ -208,7 +217,7 @@ function TextCaseWorkspace({
   return (
     <div className="toyshop-text-case">
       <label className="field" htmlFor="toyshop-operation">
-        {t('转换方式')}
+        {t(($) => $.textCase.operationLabel)}
         <select
           id="toyshop-operation"
           value={operation}
@@ -220,25 +229,28 @@ function TextCaseWorkspace({
         >
           <option value="upper">UPPERCASE</option>
           <option value="lower">lowercase</option>
-          <option value="sentence">{t('句首大写（实验性）')}</option>
+          <option value="sentence">{t(($) => $.textCase.sentenceCaseExperimental)}</option>
         </select>
       </label>
-      <label className="field" htmlFor="toyshop-scope">
-        {t('处理范围')}
-        <select
-          id="toyshop-scope"
+      <div className="field">
+        <span id="toyshop-scope-label">{t(($) => $.textCase.scopeLabel)}</span>
+        <Tabs
           value={scope}
-          disabled={busy}
-          onChange={(event) => {
+          onValueChange={(value) => {
             clearResult();
-            setScope(event.target.value as TextCaseScope);
+            setScope(value === 'document' ? 'document' : 'selected');
           }}
         >
-          <option value="selected">{t('选中对象')}</option>
-          {host.supportsCurrentArea ? <option value="area">{t('当前页面或画板')}</option> : null}
-          <option value="document">{t('整个文档')}</option>
-        </select>
-      </label>
+          <TabsList className="toyshop-scope-tabs" aria-labelledby="toyshop-scope-label">
+            <TabsTrigger value="selected" disabled={busy}>
+              {t(($) => $.textCase.selectedObjects)}
+            </TabsTrigger>
+            <TabsTrigger value="document" disabled={busy}>
+              {t(($) => $.textCase.entireDocument)}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       <label className="toyshop-check">
         <input
           type="checkbox"
@@ -249,24 +261,25 @@ function TextCaseWorkspace({
             setIncludeHidden(event.target.checked);
           }}
         />
-        {t('包含隐藏对象')}
+        {t(($) => $.textCase.includeHidden)}
       </label>
       <div className="actions toyshop-actions">
         <button className="primary" type="button" disabled={busy} onClick={() => void convert()}>
-          {busy ? t('处理中…') : t('转换')}
+          {busy ? t(($) => $.common.working) : t(($) => $.common.convert)}
         </button>
         <button type="button" disabled={busy || !undoPlan} onClick={() => void undo()}>
-          {t('撤销')}
+          {t(($) => $.common.undo)}
         </button>
       </div>
       {skipped.length ? (
         <div className="toyshop-skipped">
-          <p>
-            {t('跳过')} {skipped.length} {t('项。')}
-          </p>
+          <p>{t(($) => $.textCase.status.skipped, { count: skipped.length })}</p>
           {skipped.slice(0, 10).map((item) => (
             <p key={item.id}>
-              {item.name}：{t(skipLabels[item.reason])}
+              {t(($) => $.textCase.skippedItem, {
+                name: item.name,
+                reason: translateMessage(t, skipLabels[item.reason]),
+              })}
             </p>
           ))}
         </div>
@@ -284,7 +297,7 @@ function BarcodeIcon() {
 }
 
 function TextCaseDemo() {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const [input, setInput] = useState('Hello Café 世界 WORLD');
   const [operation, setOperation] = useState<TextCaseOperation>('upper');
   const [previous, setPrevious] = useState<string | null>(null);
@@ -292,22 +305,22 @@ function TextCaseDemo() {
   return (
     <div className="toyshop-text-case">
       <label className="field" htmlFor="toyshop-operation">
-        {t('转换方式')}
+        {t(($) => $.textCase.operationLabel)}
         <select
           id="toyshop-operation"
-          aria-label={t('转换方式')}
+          aria-label={t(($) => $.textCase.operationLabel)}
           value={operation}
           onChange={(event) => setOperation(event.target.value as TextCaseOperation)}
         >
-          <option value="upper">{t('大写')}</option>
-          <option value="lower">{t('小写')}</option>
+          <option value="upper">{t(($) => $.textCase.uppercase)}</option>
+          <option value="lower">{t(($) => $.textCase.lowercase)}</option>
         </select>
       </label>
       <label className="field" htmlFor="toyshop-input">
-        {t('示例文字')}
+        {t(($) => $.textCase.sampleText)}
         <textarea
           id="toyshop-input"
-          aria-label={t('示例文字')}
+          aria-label={t(($) => $.textCase.sampleText)}
           rows={4}
           spellCheck={false}
           value={input}
@@ -324,10 +337,10 @@ function TextCaseDemo() {
           onClick={() => {
             setPrevious(input);
             setInput(convertTextCase(input, operation));
-            toast.success(t('已修改') + ' 1 ' + t('项。'));
+            toast.success(t(($) => $.textCase.status.changed, { count: 1 }));
           }}
         >
-          {t('转换')}
+          {t(($) => $.common.convert)}
         </button>
         <button
           type="button"
@@ -335,10 +348,10 @@ function TextCaseDemo() {
           onClick={() => {
             setInput(previous!);
             setPrevious(null);
-            toast.success(t('已撤销') + ' 1 ' + t('项。'));
+            toast.success(t(($) => $.textCase.status.restored, { count: 1 }));
           }}
         >
-          {t('撤销')}
+          {t(($) => $.common.undo)}
         </button>
       </div>
     </div>

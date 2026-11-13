@@ -104,7 +104,7 @@ for (const root of roots) {
     assert.equal(manifest.manifestVersion, 5);
     assert(
       manifest.host && !Array.isArray(manifest.host),
-      'Photoshop release manifests require a single host object; arrays are development-only',
+      'Photoshop bundles require a single host object; arrays are development-only',
     );
     assert.equal(manifest.host.app, 'PS');
     assert.equal(manifest.host.data.apiVersion, 2);

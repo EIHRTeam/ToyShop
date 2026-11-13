@@ -16,6 +16,8 @@
     "@toyshop/core": "workspace:*",
     "@toyshop/module-astmatrix": "workspace:*",
     "@toyshop/module-text-case": "workspace:*",
+    "radix-ui": "^1.8.1",
+    "react-i18next": "^18.0.1",
     "sonner": "^2.0.8"
   },
   "devDependencies": {

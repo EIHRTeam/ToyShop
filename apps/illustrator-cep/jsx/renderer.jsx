@@ -36,12 +36,12 @@ $._astmatrix.render = function (doc, scene, placement, objectId) {
     try {
         if (doc.activeLayer.locked || !doc.activeLayer.visible) throw $._astmatrix.error('PERMISSION_DENIED', '当前图层锁定或不可见');
         app.coordinateSystem = CoordinateSystem.DOCUMENTCOORDINATESYSTEM;
-        group = doc.activeLayer.groupItems.add(); group.name = 'AstMatrix ' + scene.metadata.symbologyId;
+        group = doc.activeLayer.groupItems.add(); group.name = 'ToyShop ' + scene.metadata.symbologyId;
         var note = $._astmatrix.json.stringify({ astmatrix: 1, objectId: objectId, metadata: scene.metadata });
         group.note = note;
         if (group.note !== note) throw new Error('Metadata write failed');
         var envelope = group.pathItems.rectangle(oy, ox, scene.widthMm * pt, scene.heightMm * pt);
-        envelope.name = 'AstMatrix quiet-zone envelope'; envelope.filled = false; envelope.stroked = false;
+        envelope.name = 'ToyShop quiet-zone envelope'; envelope.filled = false; envelope.stroked = false;
         if (scene.background) {
             var background = group.pathItems.rectangle(oy, ox, scene.widthMm * pt, scene.heightMm * pt);
             paint(background, scene.background, 'nonzero'); background.name = 'Background';

@@ -49,6 +49,22 @@ for (const name of names) {
   packageCount++;
 }
 
+// Projects credited manually because they are not installed npm dependencies.
+const curatedProjects = [
+  {
+    url: 'https://github.com/EIHRTeam/AstMatrix',
+    license: 'Apache-2.0',
+    packages: [],
+  },
+];
+for (const project of curatedProjects) {
+  const existing = projects.get(project.url) ?? { licenses: new Set(), packages: [] };
+  existing.licenses.add(project.license);
+  for (const name of project.packages)
+    if (!existing.packages.includes(name)) existing.packages.push(name);
+  projects.set(project.url, existing);
+}
+
 const entries = [...projects.entries()]
   .sort(([a], [b]) => a.localeCompare(b, 'en'))
   .map(([url, { licenses, packages }]) => ({
@@ -57,7 +73,7 @@ const entries = [...projects.entries()]
     license: [...licenses].sort().join(', '),
     packages: packages.sort(),
   }));
-const source = `// Generated from installed third-party package manifests by tooling/generate-open-source-projects.mjs.\n// Regenerate after a dependency update with: node tooling/generate-open-source-projects.mjs\nexport const openSourceProjects = ${JSON.stringify(entries, null, 2)} as const;\n`;
+const source = `// Generated from installed third-party package manifests and curated credits by tooling/generate-open-source-projects.mjs.\n// Regenerate after a dependency update with: node tooling/generate-open-source-projects.mjs\nexport const openSourceProjects = ${JSON.stringify(entries, null, 2)} as const;\n`;
 await writeFile(output, source);
 await promisify(execFile)(path.join(modules, '.bin/oxfmt'), [output]);
 console.log(`Wrote ${entries.length} open-source projects covering ${packageCount} packages.`);

@@ -1,4 +1,4 @@
-// Generated from installed third-party package manifests by tooling/generate-open-source-projects.mjs.
+// Generated from installed third-party package manifests and curated credits by tooling/generate-open-source-projects.mjs.
 // Regenerate after a dependency update with: node tooling/generate-open-source-projects.mjs
 export const openSourceProjects = [
   {
@@ -170,6 +170,12 @@ export const openSourceProjects = [
     ],
   },
   {
+    name: 'EIHRTeam/AstMatrix',
+    url: 'https://github.com/EIHRTeam/AstMatrix',
+    license: 'Apache-2.0',
+    packages: [],
+  },
+  {
     name: 'emilkowalski/sonner',
     url: 'https://github.com/emilkowalski/sonner',
     license: 'MIT',
@@ -245,6 +251,24 @@ export const openSourceProjects = [
     url: 'https://github.com/guybedford/es-module-lexer',
     license: 'MIT',
     packages: ['es-module-lexer'],
+  },
+  {
+    name: 'i18next/html-parse-stringify',
+    url: 'https://github.com/i18next/html-parse-stringify',
+    license: 'MIT',
+    packages: ['html-parse-stringify'],
+  },
+  {
+    name: 'i18next/i18next',
+    url: 'https://github.com/i18next/i18next',
+    license: 'MIT',
+    packages: ['i18next'],
+  },
+  {
+    name: 'i18next/react-i18next',
+    url: 'https://github.com/i18next/react-i18next',
+    license: 'MIT',
+    packages: ['react-i18next'],
   },
   {
     name: 'inikulin/parse5',

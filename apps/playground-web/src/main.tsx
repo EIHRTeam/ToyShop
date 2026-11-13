@@ -1,22 +1,23 @@
 import { StrictMode, useState, useSyncExternalStore } from 'react';
 import { createRoot } from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 import { AstMatrixApplicationService } from '@astmatrix/application';
 import { lazyBwipProvider } from '@astmatrix/barcode-core/lazy';
 import { FakeHostAdapter } from '@astmatrix/host-contract';
 import type { FakeFailure } from '@astmatrix/host-contract';
-import { AstMatrixPanel, AstMatrixProviders, useLocale } from '@astmatrix/ui-react';
+import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
 import { ToyshopPanel } from '@toyshop/ui-react';
 import '@astmatrix/ui-react/styles.css';
 import '@toyshop/ui-react/styles.css';
 const service = new AstMatrixApplicationService(lazyBwipProvider);
 const adapter = new FakeHostAdapter();
 function DemoControls() {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const host = useSyncExternalStore(adapter.subscribe, adapter.getSnapshot, adapter.getSnapshot);
   const [failure, setFailure] = useState<FakeFailure>('none');
   return (
-    <aside className="demo-controls" aria-label={t('模拟宿主控制')}>
-      <strong>{t('模拟宿主')}</strong>
+    <aside className="demo-controls" aria-label={t(($) => $.playground.controls)}>
+      <strong>{t(($) => $.playground.simulatedHost)}</strong>
       <button
         onClick={() =>
           adapter.setDocument(
@@ -24,15 +25,17 @@ function DemoControls() {
           )
         }
       >
-        {t('切换文档')}
+        {t(($) => $.playground.switchDocument)}
       </button>
       <button onClick={() => adapter.setDocument(host.documentId ? null : 'demo-document')}>
-        {t(host.documentId ? '关闭文档' : '打开文档')}
+        {host.documentId
+          ? t(($) => $.playground.closeDocument)
+          : t(($) => $.playground.openDocument)}
       </button>
       <label>
-        {t('失败场景')}{' '}
+        {t(($) => $.playground.failureScenario)}{' '}
         <select
-          aria-label={t('失败场景')}
+          aria-label={t(($) => $.playground.failureScenario)}
           value={failure}
           onChange={(e) => {
             const value = e.target.value as FakeFailure;
@@ -40,20 +43,25 @@ function DemoControls() {
             setFailure(value);
           }}
         >
-          <option value="none">{t('正常插入')}</option>
-          <option value="provider-independent-host">{t('权限拒绝')}</option>
-          <option value="partial-rollback">{t('部分失败 / 清理成功')}</option>
-          <option value="rollback-failed">{t('部分失败 / 清理失败')}</option>
+          <option value="none">{t(($) => $.playground.normalInsertion)}</option>
+          <option value="provider-independent-host">
+            {t(($) => $.playground.permissionDenied)}
+          </option>
+          <option value="partial-rollback">{t(($) => $.playground.partialFailureCleaned)}</option>
+          <option value="rollback-failed">{t(($) => $.playground.partialFailureUncleaned)}</option>
         </select>
       </label>
       <span>
-        {t('文档')}：{host.documentId ?? t('无文档')} · {t('对象仅存于浏览器内存')}
+        {t(($) => $.playground.documentStatus, {
+          document: host.documentId ?? t(($) => $.playground.noDocument),
+          mode: t(($) => $.playground.memoryOnly),
+        })}
       </span>
     </aside>
   );
 }
 const container = document.getElementById('root');
-if (!container) throw new Error('AstMatrix playground requires #root');
+if (!container) throw new Error('ToyShop playground requires #root');
 createRoot(container).render(
   <StrictMode>
     <AstMatrixProviders service={service} adapter={adapter}>

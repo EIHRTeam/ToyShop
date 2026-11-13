@@ -39,7 +39,7 @@ export function startFigmaPlugin(
     runtime.initialize();
     return runtime;
   } catch (error) {
-    console.error('[AstMatrix] Figma startup failed:', errorMessage(error));
+    console.error('[ToyShop] Figma startup failed:', errorMessage(error));
     api.ui.postMessage({
       channel: FIGMA_CHANNEL,
       type: 'startup-error',

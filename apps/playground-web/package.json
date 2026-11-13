@@ -23,7 +23,8 @@
     "@astmatrix/vector-ir": "workspace:*",
     "@toyshop/ui-react": "workspace:*",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "react-i18next": "^18.0.1"
   },
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.4",

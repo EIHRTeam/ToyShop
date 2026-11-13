@@ -25,7 +25,12 @@ afterEach(() => {
   localStorage.clear();
 });
 
-function mountFigmaPanel(sourceKind: 'null' | 'other' = 'other', showDiagnostics = false) {
+function mountFigmaPanel(
+  sourceKind: 'null' | 'other' = 'other',
+  showDiagnostics = false,
+  locale: 'zh-CN' | 'en' = 'zh-CN',
+) {
+  localStorage.setItem('astmatrix.language', locale);
   const host = fakeFigma();
   if (sourceKind === 'other') {
     relayFrame = document.createElement('iframe');
@@ -56,14 +61,17 @@ function mountFigmaPanel(sourceKind: 'null' | 'other' = 'other', showDiagnostics
       <FigmaPanel
         service={new AstMatrixApplicationService(bwipProvider)}
         adapter={adapter}
-        hostLocale="zh_CN"
         debounceMs={0}
         transport={transport}
         showDiagnostics={showDiagnostics}
       />
     </StrictMode>,
   );
-  fireEvent.click(screen.getByRole('button', { name: '二维码 / 条形码生成' }));
+  fireEvent.click(
+    screen.getByRole('button', {
+      name: locale === 'en' ? 'QR Code / Barcode Generator' : '二维码 / 条形码生成',
+    }),
+  );
   return host;
 }
 
@@ -115,7 +123,18 @@ it('keeps a useful connection error but hides diagnostic details in the default 
   expect(document.body.textContent).toContain('Figma 消息桥未连接，请重新运行插件');
   expect(document.body.textContent).not.toContain('请先打开文档');
   expect(document.querySelector('.figma-connection-diagnostic')).toBeNull();
-  expect(document.body.textContent).not.toContain('AstMatrix UI bridge');
+  expect(document.body.textContent).not.toContain('ToyShop UI bridge');
+});
+it('shows an English connection error while keeping raw diagnostics out of the default UI', async () => {
+  vi.useFakeTimers();
+  const host = mountFigmaPanel('other', false, 'en');
+  host.mock.ui.postMessage.mockImplementation(() => {});
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10000);
+  });
+  expect(document.body.textContent).toContain('The Figma bridge is not connected');
+  expect(document.body.textContent).not.toMatch(/\p{Script=Han}/u);
+  expect(document.body.textContent).not.toContain('ToyShop UI bridge');
 });
 
 it('allows diagnostic details only when explicitly enabled for debugging', async () => {
@@ -125,5 +144,5 @@ it('allows diagnostic details only when explicitly enabled for debugging', async
   await act(async () => {
     await vi.advanceTimersByTimeAsync(10000);
   });
-  expect(screen.getByRole('alert').textContent).toContain('AstMatrix UI bridge 4');
+  expect(screen.getByRole('alert').textContent).toContain('ToyShop UI bridge 4');
 });

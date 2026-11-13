@@ -25,19 +25,24 @@ afterEach(async () => {
 });
 const button = (label: string) =>
   Array.from(document.querySelectorAll('button')).find((b) => b.textContent === label)!;
-async function mount() {
+async function mount(hostLocale = 'zh_CN') {
   const adapter = new FakeHostAdapter(),
     service = new AstMatrixApplicationService(bwipProvider);
   await act(async () =>
     root.render(
       <StrictMode>
-        <AstMatrixProviders service={service} adapter={adapter} hostLocale="zh_CN" debounceMs={0}>
+        <AstMatrixProviders
+          service={service}
+          adapter={adapter}
+          hostLocale={hostLocale}
+          debounceMs={0}
+        >
           <AstMatrixPanel />
         </AstMatrixProviders>
       </StrictMode>,
     ),
   );
-  await change('编码内容', '6901234567892');
+  await change(hostLocale === 'en_US' ? 'Content' : '编码内容', '6901234567892');
   await act(async () => {
     await new Promise((r) => setTimeout(r, 20));
   });
@@ -170,6 +175,18 @@ it('no document still allows SVG copying; insertion is exclusive and reports ada
   ).toBe(true);
   expect(document.body.textContent).toContain('残留对象');
 });
+it('shows a localized English insertion error without raw host text', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  const { adapter } = await mount('en_US');
+  adapter.failure = 'rollback-failed';
+  await act(async () => button('Simulate insertion').click());
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+  const message = document.querySelector('[data-sonner-toast][data-type="error"]')?.textContent;
+  expect(message).toContain('ROLLBACK_FAILED:');
+  expect(message).not.toMatch(/\p{Script=Han}/u);
+});
 it('unmount during a queued insert cancels before commit', async () => {
   const { adapter } = await mount();
   let release!: () => void;
@@ -259,6 +276,26 @@ it('falls back to a selected textarea, restores focus and reports clipboard fail
     expect(document.body.textContent).not.toContain('SVG 已复制');
     expect(copy.disabled).toBe(false);
     expect(document.querySelectorAll('textarea')).toHaveLength(1);
+  } finally {
+    Reflect.deleteProperty(document, 'execCommand');
+  }
+});
+
+it('uses a localized clipboard failure when the browser returns Chinese diagnostics', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => {});
+  await mount('en_US');
+  vi.stubGlobal('navigator', {
+    clipboard: { writeText: async () => Promise.reject(new Error('剪贴板权限不足')) },
+  });
+  Object.defineProperty(document, 'execCommand', {
+    configurable: true,
+    value: () => false,
+  });
+  try {
+    await act(async () => button('Copy SVG').click());
+    const message = document.querySelector('.preview .error')?.textContent;
+    expect(message).toContain('Unable to copy SVG:');
+    expect(message).not.toMatch(/\p{Script=Han}/u);
   } finally {
     Reflect.deleteProperty(document, 'execCommand');
   }

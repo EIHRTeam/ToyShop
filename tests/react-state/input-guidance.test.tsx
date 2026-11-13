@@ -9,7 +9,10 @@ import { AstMatrixError } from '@astmatrix/shared';
 import { AstMatrixPanel, AstMatrixProviders, useLocale } from '@astmatrix/ui-react';
 import { contentPlaceholder } from '../../packages/ui-react/src/input-guidance';
 import { engineErrorMessage } from '../../packages/ui-react/src/l10n/engine-errors';
-import { translate } from '../../packages/ui-react/src/l10n/messages';
+import { translateMessage } from '../../packages/ui-react/src/l10n/dynamic';
+import { createI18n } from '../../packages/ui-react/src/l10n/i18n';
+const en = createI18n('en');
+const english = (source: string) => translateMessage(en.t, source);
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -60,7 +63,7 @@ it('provides translated placeholders for every profile and adapts to check digit
   for (const profile of profiles) {
     const hint = contentPlaceholder(profile);
     expect(hint.startsWith('请输入')).toBe(true);
-    expect(translate('en', hint)).not.toMatch(/\p{Script=Han}/u);
+    expect(english(hint)).not.toMatch(/\p{Script=Han}/u);
   }
   expect(contentPlaceholder(getProfile('ean13-default'))).toContain('13');
   expect(contentPlaceholder(getProfile('ean13-default'), { checkDigit: 'generate' })).toContain(
@@ -121,8 +124,8 @@ it.each([
     expect(source).not.toContain(message);
     expect(source).not.toContain('bwipp.');
     expect(source).not.toContain(code);
-    expect(translate('en', source)).not.toMatch(/\p{Script=Han}/u);
-    expect(translate('en', source)).not.toBe(source);
+    expect(english(source)).not.toMatch(/\p{Script=Han}/u);
+    expect(english(source)).not.toBe(source);
   },
 );
 it('localizes engine failures in the visible UI and never leaks provider field diagnostics', async () => {

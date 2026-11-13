@@ -2,7 +2,7 @@
   "name": "@astmatrix/shared",
   "version": "0.1.3",
   "private": true,
-  "description": "Framework-free primitives shared by every AstMatrix package",
+  "description": "Framework-free primitives shared by ToyShop packages",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"

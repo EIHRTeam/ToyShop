@@ -9,7 +9,7 @@ import { parse } from 'acorn';
 export async function verifyFigma(directory) {
   const info = JSON.parse(await readFile(path.join(directory, 'host-build-info.json'), 'utf8'));
   assert.equal(info.target, 'figma-plugin');
-  assert.equal(info.developmentBuild, false);
+  assert.equal(info.developmentBuild, true);
   assert.equal(info.diagnosticsVisible, false);
   assert.equal(info.actualHost, 'not-run');
   for (const artifact of info.artifacts) {
@@ -25,7 +25,7 @@ export async function verifyFigma(directory) {
   assert.deepEqual(manifest.networkAccess, { allowedDomains: ['none'] });
   assert.equal(manifest.main, 'code.js');
   assert.equal(manifest.ui, 'ui.html');
-  assert.equal(info.pluginIdConfigured, true);
+  assert.equal(info.pluginIdConfigured, false);
   assert.equal(typeof manifest.id, 'string');
   assert(/^\d{1,64}$/.test(manifest.id));
   const main = await readFile(path.join(directory, manifest.main), 'utf8');

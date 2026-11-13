@@ -1,7 +1,8 @@
 import { useState, useSyncExternalStore } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { AstMatrixApplicationService } from '@astmatrix/application';
 import type { FigmaPluginAdapter, FigmaTransport } from '@astmatrix/host-adapter-figma-plugin';
-import { AstMatrixPanel, AstMatrixProviders, useLocale } from '@astmatrix/ui-react';
+import { AstMatrixPanel, AstMatrixProviders } from '@astmatrix/ui-react';
 import { ToyshopPanel } from '@toyshop/ui-react';
 import { createRemoteTextCaseHost } from '@toyshop/module-text-case';
 
@@ -9,14 +10,12 @@ export function FigmaPanel({
   service,
   adapter,
   transport,
-  hostLocale,
   debounceMs,
   showDiagnostics = false,
 }: {
   service: AstMatrixApplicationService;
   adapter: FigmaPluginAdapter;
   transport: FigmaTransport;
-  hostLocale?: string;
   debounceMs?: number;
   showDiagnostics?: boolean;
 }) {
@@ -29,7 +28,6 @@ export function FigmaPanel({
     <AstMatrixProviders
       service={service}
       adapter={adapter}
-      hostLocale={hostLocale}
       debounceMs={debounceMs}
       openExternal={(url) => transport.openExternal(url)}
       hostStatusMessage={connection.message}
@@ -42,11 +40,11 @@ export function FigmaPanel({
   );
 }
 function ConnectionDiagnostic({ details }: { details: string }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   return (
     <aside className="figma-connection-diagnostic" role="alert">
       <details open>
-        <summary>{t('Figma 连接诊断')}</summary>
+        <summary>{t(($) => $.host.figma.connectionDiagnostics)}</summary>
         <pre>{details}</pre>
       </details>
     </aside>

@@ -267,7 +267,7 @@ export class PhotoshopAdapter implements HostAdapter {
             throw new HostError('INVALID_INPUT', '包含静区的条码尺寸超出文档画布');
           const suspension = await context.hostControl.suspendHistory({
             documentID: doc.id,
-            name: 'AstMatrix 插入条码',
+            name: 'ToyShop 插入条码',
           });
           let committed = false;
           try {
@@ -283,7 +283,7 @@ export class PhotoshopAdapter implements HostAdapter {
             layers.push(
               await this.shape(
                 doc,
-                'AstMatrix quiet-zone envelope',
+                'ToyShop quiet-zone envelope',
                 envelope,
                 scene.background ?? scene.foreground,
                 offset,
@@ -333,7 +333,7 @@ export class PhotoshopAdapter implements HostAdapter {
             throw error;
           }
         },
-        { commandName: 'AstMatrix 插入原生矢量' },
+        { commandName: 'ToyShop 插入原生矢量' },
       );
     } catch (error) {
       if (error instanceof HostError) throw error;

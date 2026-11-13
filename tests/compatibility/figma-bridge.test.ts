@@ -8,7 +8,7 @@ import {
   FIGMA_CHANNEL,
   normalizeFigmaMessage,
 } from '../../packages/host-adapters/figma-plugin/src/protocol';
-import { stableStringify } from '@astmatrix/shared';
+import { PROJECT_URL, stableStringify } from '@astmatrix/shared';
 import { fakeFigma, figmaScene } from '../fixtures/figma';
 
 afterEach(() => vi.useRealTimers());
@@ -217,7 +217,7 @@ it.each(['foreign', 'null-prototype'] as const)(
         isCurrent: () => true,
       });
       expect(result.objectId).toBe('node-0');
-      await f.transport.openExternal('https://github.com/EIHRTeam/AstMatrix');
+      await f.transport.openExternal(PROJECT_URL);
       expect(f.host.mock.openExternal).toHaveBeenCalledOnce();
     } finally {
       f.adapter.dispose();
@@ -288,7 +288,7 @@ it('proactively initializes the UI and exposes startup errors', () => {
     });
     expect(startFigmaPlugin(api, '<html></html>')).toBeNull();
     expect(log).toHaveBeenCalledWith(
-      '[AstMatrix] Figma startup failed:',
+      '[ToyShop] Figma startup failed:',
       'Host initialization failed',
     );
     expect(host.mock.ui.postMessage).toHaveBeenLastCalledWith(

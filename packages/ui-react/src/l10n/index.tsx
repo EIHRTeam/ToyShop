@@ -1,7 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { translate } from './messages';
-import type { Locale } from './messages';
+import { I18nextProvider } from 'react-i18next';
+import { parseLocaleTag, supportedLocale } from '@astmatrix/shared';
+import { createI18n } from './i18n';
+import type { Locale } from './i18n';
 export type LanguagePreference = 'auto' | Locale;
 export const LANGUAGE_STORAGE_KEY = 'astmatrix.language';
 export function isLanguagePreference(value: unknown): value is LanguagePreference {
@@ -9,8 +11,18 @@ export function isLanguagePreference(value: unknown): value is LanguagePreferenc
 }
 export function resolveLocale(preference: LanguagePreference, hostLocale?: string): Locale {
   if (preference !== 'auto') return preference;
-  const language = hostLocale || (typeof navigator === 'undefined' ? 'en' : navigator.language);
-  return /^zh(?:[-_]|$)/i.test(language) ? 'zh-CN' : 'en';
+  if (hostLocale?.trim()) {
+    const locale = parseLocaleTag(hostLocale);
+    if (locale) return supportedLocale(locale) ?? 'en';
+  }
+  if (typeof navigator === 'undefined') return 'en';
+  for (const tag of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const locale = parseLocaleTag(tag);
+    if (!locale) continue;
+    const supported = supportedLocale(locale);
+    if (supported) return supported;
+  }
+  return 'en';
 }
 function readPreference(): LanguagePreference {
   try {
@@ -24,7 +36,6 @@ const LocaleContext = createContext({
   locale: 'zh-CN' as Locale,
   preference: 'auto' as LanguagePreference,
   setPreference: (_value: LanguagePreference) => {},
-  t: (source: string) => source,
 });
 export function LocaleProvider({
   hostLocale,
@@ -35,9 +46,11 @@ export function LocaleProvider({
 }) {
   const [preference, setLanguage] = useState(readPreference);
   const locale = resolveLocale(preference, hostLocale);
+  const [i18n] = useState(() => createI18n(locale));
   useEffect(() => {
     document.documentElement.lang = locale;
-  }, [locale]);
+    void i18n.changeLanguage(locale);
+  }, [i18n, locale]);
   const setPreference = useCallback((value: LanguagePreference) => {
     setLanguage(value);
     try {
@@ -51,10 +64,13 @@ export function LocaleProvider({
       locale,
       preference,
       setPreference,
-      t: (source: string) => translate(locale, source),
     }),
     [locale, preference, setPreference],
   );
-  return <LocaleContext value={value}>{children}</LocaleContext>;
+  return (
+    <I18nextProvider i18n={i18n}>
+      <LocaleContext value={value}>{children}</LocaleContext>
+    </I18nextProvider>
+  );
 }
 export const useLocale = () => useContext(LocaleContext);

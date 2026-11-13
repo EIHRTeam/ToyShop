@@ -41,7 +41,7 @@ export class FigmaTransport implements HostTransport {
   private listeners = new Set<(snapshot: HostSnapshot) => void>();
   private connection: FigmaConnectionState = { status: 'connecting', message: '正在连接 Figma…' };
   private connectionListeners = new Set<() => void>();
-  private lastRelayDiagnostic = 'No messages on the AstMatrix channel.';
+  private lastRelayDiagnostic = 'No messages on the ToyShop channel.';
   private connectionTimer: ReturnType<typeof setTimeout>;
   private ready: Promise<void>;
   private accept: () => void = () => {};
@@ -78,7 +78,7 @@ export class FigmaTransport implements HostTransport {
     this.setConnection({
       status: 'error',
       message,
-      details: `AstMatrix UI bridge ${FIGMA_BRIDGE_VERSION}\n${detail}`,
+      details: `ToyShop UI bridge ${FIGMA_BRIDGE_VERSION}\n${detail}`,
     });
   }
   subscribeSnapshot(listener: (snapshot: HostSnapshot) => void): () => void {

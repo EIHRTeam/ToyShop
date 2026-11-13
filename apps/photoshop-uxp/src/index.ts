@@ -3,7 +3,7 @@ import { bwipProvider } from '@astmatrix/barcode-core';
 import { PhotoshopAdapter } from '@astmatrix/host-adapter-photoshop-uxp';
 import type { PhotoshopRuntime } from '@astmatrix/host-adapter-photoshop-uxp';
 import { HostError } from '@astmatrix/host-contract';
-import { errorMessage } from '@astmatrix/shared';
+import { errorMessage, parseLocaleTag, supportedLocale } from '@astmatrix/shared';
 import { mountNativePanel } from '@astmatrix/ui-uxp';
 import type { UxpElement } from '@astmatrix/ui-uxp';
 import { WebviewHostBridge } from './webview-host';
@@ -96,6 +96,7 @@ const previewSvg = (svg: string, isCurrent: () => boolean): Promise<string> => {
   return task;
 };
 const startNative = () => {
+  // Deprecated Chinese-only fallback for hosts that cannot load the bundled WebView.
   if (!native)
     native = mountNativePanel({
       document,
@@ -123,9 +124,11 @@ const bridge =
         locale: uxp.host.uiLocale,
         openExternal: async (url) => {
           if (!uxp.shell) throw new HostError('UNSUPPORTED_FEATURE', '无法打开外部链接');
-          const message = /^zh/i.test(uxp.host.uiLocale ?? '')
-            ? '在默认浏览器中打开 AstMatrix 外部链接。'
-            : 'Open the AstMatrix external link in your default browser.';
+          const locale = parseLocaleTag(uxp.host.uiLocale ?? '');
+          const message =
+            locale && supportedLocale(locale) === 'zh-CN'
+              ? '在默认浏览器中打开 ToyShop 外部链接。'
+              : 'Open the ToyShop external link in your default browser.';
           const error = await uxp.shell.openExternal(url, message);
           if (error) throw new HostError('UNKNOWN_HOST_ERROR', error);
         },
@@ -156,7 +159,7 @@ if (webview) {
       status.textContent = diagnostic;
       status.style.display = 'block';
     }
-    console.warn('AstMatrix WebView:', diagnostic);
+    console.warn('ToyShop WebView:', diagnostic);
     showNative();
   } else {
     webview.addEventListener('loadstart', () => {
@@ -174,7 +177,7 @@ if (webview) {
         status.textContent = `WebUI 加载失败：${detail}，已回退原生面板`;
         status.style.display = 'block';
       }
-      console.warn('AstMatrix WebView:', detail);
+      console.warn('ToyShop WebView:', detail);
       showNative();
     });
     window.addEventListener('message', receiveMessage);

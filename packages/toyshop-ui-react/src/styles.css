@@ -132,6 +132,41 @@
   margin: 0 auto;
   padding: 26px 24px;
 }
+.toyshop-scope-tabs {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  min-height: 36px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--muted);
+  color: var(--muted-foreground);
+}
+.toyshop-scope-tabs [data-slot='tabs-trigger'] {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  font-weight: 500;
+}
+.toyshop-scope-tabs [data-slot='tabs-trigger'][data-state='active'] {
+  background: var(--background);
+  color: var(--foreground);
+}
+.toyshop-scope-tabs [data-slot='tabs-trigger']:focus:not(:focus-visible) {
+  outline: none;
+}
+.toyshop-scope-tabs [data-slot='tabs-trigger']:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
 .toyshop-check {
   display: flex;
   align-items: center;

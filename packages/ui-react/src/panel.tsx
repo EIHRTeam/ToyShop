@@ -13,6 +13,7 @@ import type { Dispatch, ReactNode } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { FieldErrors, Resolver } from 'react-hook-form';
 import { Toaster, toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
   AstMatrixApplicationService,
   PreviewController,
@@ -28,6 +29,8 @@ import type { HostAdapter } from '@astmatrix/host-contract';
 import { initialSelection, selectionReducer } from './selection';
 import { copySvgToClipboard } from './clipboard';
 import { LocaleProvider, useLocale } from './l10n';
+import { translateMessage } from './l10n/dynamic';
+import { translateError, translateValidationError } from './l10n/errors';
 import { BrandHeader, ExternalLinkContext, ProjectLinkContext } from './header-actions';
 import { contentPlaceholder } from './input-guidance';
 import { engineErrorMessage } from './l10n/engine-errors';
@@ -151,7 +154,7 @@ export function AstMatrixPanel({ showHeader = true }: { showHeader?: boolean }) 
   );
 }
 function Workbench({ runtime }: { runtime: Runtime }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const selection = useContext(SelectionStateContext),
     dispatch = useContext(SelectionDispatchContext);
   const settings = useContext(SettingsContext),
@@ -173,7 +176,7 @@ function Workbench({ runtime }: { runtime: Runtime }) {
   };
   return (
     <>
-      <div role="tablist" aria-label={t('编码类别')} className="tabs">
+      <div role="tablist" aria-label={t(($) => $.barcode.tabs.categoryLabel)} className="tabs">
         {(['barcode', 'matrix'] as CodeTab[]).map((tab) => (
           <button
             key={tab}
@@ -200,7 +203,7 @@ function Workbench({ runtime }: { runtime: Runtime }) {
             aria-selected={selection.tab === tab}
             onClick={() => choose({ type: 'tab', tab })}
           >
-            {t(tab === 'barcode' ? '条形码' : '二维码')}
+            {tab === 'barcode' ? t(($) => $.barcode.tabs.linear) : t(($) => $.barcode.tabs.matrix)}
           </button>
         ))}
       </div>
@@ -210,7 +213,7 @@ function Workbench({ runtime }: { runtime: Runtime }) {
         id={'panel-' + selection.tab}
         aria-labelledby={'tab-' + selection.tab}
       >
-        <section className="editor" aria-label={t('编码参数')}>
+        <section className="editor" aria-label={t(($) => $.barcode.form.settingsTitle)}>
           <div className="section-heading editor-heading">
             <label className="settings">
               <input
@@ -218,13 +221,13 @@ function Workbench({ runtime }: { runtime: Runtime }) {
                 checked={settings.advanced}
                 onChange={(e) => setAdvanced(e.target.checked)}
               />
-              {t('高级设置')}
+              {t(($) => $.barcode.form.advancedSettings)}
             </label>
           </div>
           <label className="field">
-            {t('编码格式')}
+            {t(($) => $.barcode.form.symbology)}
             <select
-              aria-label={t('编码格式')}
+              aria-label={t(($) => $.barcode.form.symbology)}
               value={symbol.id}
               onChange={(e) => choose({ type: 'symbology', id: e.target.value })}
             >
@@ -233,13 +236,13 @@ function Workbench({ runtime }: { runtime: Runtime }) {
                   .filter((s) => s.tab === selection.tab)
                   .map((s) => (
                     <option key={s.id} value={s.id}>
-                      {t(s.label)}
-                      {s.status === 'listed' ? ' · ' + t('未实现') : ''}
+                      {translateMessage(t, s.label)}
+                      {s.status === 'listed' ? ' · ' + t(($) => $.common.notImplemented) : ''}
                     </option>
                   ));
                 if (selection.tab === 'matrix') return options;
                 return options.length ? (
-                  <optgroup key={group.category} label={t(group.label)}>
+                  <optgroup key={group.category} label={translateMessage(t, group.label)}>
                     {options}
                   </optgroup>
                 ) : null;
@@ -247,22 +250,25 @@ function Workbench({ runtime }: { runtime: Runtime }) {
             </select>
           </label>
           <label className="field">
-            {t('业务预设')}
+            {t(($) => $.barcode.form.preset)}
             <select
-              aria-label={t('业务预设')}
+              aria-label={t(($) => $.barcode.form.preset)}
               value={selection.profileId}
               onChange={(e) => choose({ type: 'profile', id: e.target.value })}
             >
               {symbol.profileIds.map((id) => (
                 <option key={id} value={id}>
-                  {t(profiles.find((candidate) => candidate.id === id)?.label ?? id)}
+                  {translateMessage(
+                    t,
+                    profiles.find((candidate) => candidate.id === id)?.label ?? id,
+                  )}
                 </option>
               ))}
             </select>
           </label>
           {!enabled ? (
             <div role="alert" className="notice">
-              {t(symbol.reason)}
+              {translateMessage(t, symbol.reason)}
             </div>
           ) : null}
           <div hidden={!enabled}>
@@ -284,7 +290,8 @@ function BarcodeForm({
   enabled: boolean;
 }) {
   const { advanced } = useContext(SettingsContext);
-  const { t } = useLocale();
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const previousProfile = useRef(profile);
   const currentFields = useCallback(
     (values: Record<string, unknown>) =>
@@ -375,26 +382,33 @@ function BarcodeForm({
               {f.kind === 'boolean' ? (
                 <>
                   <input type="checkbox" {...attrs} />
-                  {t(f.label)}
+                  {translateMessage(t, f.label)}
                 </>
               ) : (
                 <>
-                  {t(f.label)}
+                  {translateMessage(t, f.label)}
                   {f.kind === 'select' ? (
-                    <select {...attrs} aria-label={t(f.label)}>
+                    <select {...attrs} aria-label={translateMessage(t, f.label)}>
                       {f.options?.map((v) => (
                         <option key={v} value={v}>
-                          {t(v === 'validate' ? '校验已有' : v === 'generate' ? '自动生成' : v)}
+                          {v === 'validate'
+                            ? t(($) => $.barcode.form.validateExisting)
+                            : v === 'generate'
+                              ? t(($) => $.barcode.form.generateAutomatically)
+                              : translateMessage(t, v)}
                         </option>
                       ))}
                     </select>
                   ) : f.kind === 'text' && f.name === 'text' ? (
                     <textarea
-                      placeholder={t(contentPlaceholder(profile, { checkDigit, hri }))}
+                      placeholder={translateMessage(
+                        t,
+                        contentPlaceholder(profile, { checkDigit, hri }),
+                      )}
                       rows={4}
                       spellCheck={false}
                       {...attrs}
-                      aria-label={t(f.label)}
+                      aria-label={translateMessage(t, f.label)}
                       aria-invalid={!!error}
                     />
                   ) : (
@@ -402,7 +416,7 @@ function BarcodeForm({
                       type={f.kind === 'number' ? 'number' : 'text'}
                       step="any"
                       {...attrs}
-                      aria-label={t(f.label)}
+                      aria-label={translateMessage(t, f.label)}
                       aria-invalid={!!error}
                     />
                   )}
@@ -410,7 +424,7 @@ function BarcodeForm({
               )}
               {error ? (
                 <span className="field-error" role="alert">
-                  {t(String(error))}
+                  {translateValidationError(t, String(error), locale)}
                 </span>
               ) : null}
             </label>
@@ -420,7 +434,8 @@ function BarcodeForm({
   );
 }
 function PreviewPanel({ runtime }: { runtime: Runtime }) {
-  const { t } = useLocale();
+  const { t } = useTranslation();
+  const { locale } = useLocale();
   const mounted = useRef(false);
   useEffect(() => {
     mounted.current = true;
@@ -444,7 +459,9 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
   const ready = preview.status === 'ready' ? preview.barcode : null;
   const insertionMessage = hostStatusMessage ?? (ready ? insertionReason(host, ready.scene) : null);
   const reason =
-    insert.status === 'pending' ? t('正在插入，请稍候') : insertionMessage && t(insertionMessage);
+    insert.status === 'pending'
+      ? t(($) => $.preview.insertingPleaseWait)
+      : insertionMessage && translateError(t, insertionMessage);
   const copySvg = async () => {
     if (!ready || copying) return;
     const revision = preview.revision;
@@ -455,6 +472,7 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
         current?.revision === revision ? { revision, status: 'success' } : current,
       );
     } catch (error) {
+      console.error('[ToyShop] SVG copy failed:', error);
       setCopyResult((current) =>
         current?.revision === revision
           ? { revision, status: 'error', message: errorMessage(error) }
@@ -466,38 +484,53 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
     try {
       const result = await runtime.insert.insert();
       if (!mounted.current) return;
-      toast.success(t(fake ? '模拟插入成功' : '插入成功'), {
-        description: `${result.objectId} / ${result.documentId}`,
-      });
+      toast.success(
+        fake ? t(($) => $.preview.simulatedInsertSucceeded) : t(($) => $.preview.insertSucceeded),
+        {
+          description: `${result.objectId} / ${result.documentId}`,
+        },
+      );
     } catch (error) {
       if (!mounted.current) return;
+      console.error('[ToyShop] insertion failed:', error);
       toast.error(
         error instanceof AstMatrixError
-          ? `${error.code}：${t(error.message)}`
-          : errorMessage(error),
+          ? t(($) => $.common.errorWithCode, {
+              code: error.code,
+              message: translateError(t, error),
+            })
+          : translateError(t, error),
       );
     }
   };
   return (
-    <section className="preview" aria-label={t('矢量预览')}>
+    <section className="preview" aria-label={t(($) => $.preview.title)}>
       <div className="section-heading">
-        <span>{t('矢量预览')}</span>
+        <span>{t(($) => $.preview.title)}</span>
         {preview.status === 'pending' || preview.status === 'error' ? (
           <output className="status">
-            {t(preview.status === 'pending' ? '生成中' : '需要修正')}
+            {preview.status === 'pending'
+              ? t(($) => $.preview.generating)
+              : t(($) => $.preview.needsCorrection)}
           </output>
         ) : null}
       </div>
       <div className="preview-stage">
         {ready ? (
           <img
-            alt={`${t(getSymbology(ready.request.symbologyId).label)} ${t('矢量预览')}`}
+            alt={t(($) => $.preview.vectorAlt, {
+              symbology: translateMessage(t, getSymbology(ready.request.symbologyId).label),
+            })}
             src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(ready.svg)}`}
           />
         ) : (
           <div className="placeholder">
             <span aria-hidden="true">▥</span>
-            <p>{t(preview.status === 'pending' ? '正在生成矢量…' : '输入有效内容以生成预览')}</p>
+            <p>
+              {preview.status === 'pending'
+                ? t(($) => $.preview.generatingVector)
+                : t(($) => $.preview.enterValidContent)}
+            </p>
           </div>
         )}
       </div>
@@ -505,11 +538,15 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
         <div className="error" role="alert">
           {preview.error.layer === 'provider' ? (
             <>
-              {t('编码引擎')}：{t(engineErrorMessage(preview.error))}
+              {t(($) => $.preview.engineError, {
+                message: translateMessage(t, engineErrorMessage(preview.error)),
+              })}
             </>
           ) : (
             <>
-              {t('输入校验')}：{t(preview.error.message)}
+              {t(($) => $.preview.validationError, {
+                message: translateValidationError(t, preview.error.message, locale),
+              })}
             </>
           )}
         </div>
@@ -523,15 +560,13 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
             void insertScene();
           }}
         >
-          {t(
-            insert.status === 'pending'
-              ? fake
-                ? '正在模拟插入…'
-                : '正在插入…'
-              : fake
-                ? '模拟插入文档'
-                : '插入文档',
-          )}
+          {insert.status === 'pending'
+            ? fake
+              ? t(($) => $.preview.simulatingInsert)
+              : t(($) => $.preview.inserting)
+            : fake
+              ? t(($) => $.preview.simulateInsert)
+              : t(($) => $.preview.insertDocument)}
         </button>
         <button
           type="button"
@@ -542,14 +577,16 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
           aria-disabled={copying || undefined}
           aria-busy={copying}
         >
-          {t(copying ? '复制中…' : '复制 SVG')}
+          {copying ? t(($) => $.preview.copying) : t(($) => $.preview.copySvg)}
         </button>
       </div>
       {copyFeedback?.status === 'success' ? (
-        <output className="success">{t('SVG 已复制')}</output>
+        <output className="success">{t(($) => $.preview.svgCopied)}</output>
       ) : copyFeedback?.status === 'error' ? (
         <p role="alert" className="error">
-          {t('复制 SVG 失败')}：{t(copyFeedback.message ?? '')}
+          {t(($) => $.preview.copyError, {
+            message: translateError(t, copyFeedback.message),
+          })}
         </p>
       ) : null}
       {reason ? <p className="hint">{reason}</p> : null}

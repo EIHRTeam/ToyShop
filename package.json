@@ -2,7 +2,7 @@
   "name": "toyshop",
   "version": "0.1.0",
   "private": true,
-  "description": "ToyShop — offline-first modular design toolbox with AstMatrix",
+  "description": "A suite of toys for designers.",
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {

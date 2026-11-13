@@ -27,16 +27,13 @@ A suite of toys for designers.
 - Adobe Photoshop 2025 (and above)
 - Figma
 
-### Partial Support
-
-- Adobe Photoshop 2023~2024 (without web UI)
-
 ## Features
 
 - **Bar Code & QR Code Generation** (Formerly **[AstMatrix](https://github.com/EIHRTeam/AstMatrix)**)<br>
     Generate bar code or QR code in any symbology, right in your design tools.
 
-- ****
+- **Low Case - Upper Case Convert**<br>
+    Convert selected text to lower case or upper case.
 
 ## Installation
 
@@ -164,39 +161,3 @@ Copyright © 2026 Endfield Industries Human Resource Team.
 This project is licensed under the [Apache License, Version 2.0](LICENSE).
 
 Privacy policy: [PRIVACY.md](https://github.com/EIHRTeam/AstMAtrix/blob/main/PRIVACY.md)
-
----
-
-## 当前结构
-
-- `packages/core`：内建模块注册与宿主能力声明。
-- `packages/modules/astmatrix`：AstMatrix 模块元数据；实现继续使用 `@astmatrix/*` 包。
-- `packages/modules/text-case`：Text Case 的 ASCII Latin Safe 转换、变更计划与过期校验。
-- `packages/toyshop-ui-react`：ToyShop 模块入口及 Text Case 转换和撤销界面。
-- `apps/`：Playground、Illustrator CEP、Photoshop UXP 和 Figma Design 入口。
-- `tooling/`：沿用 AstMatrix 的兼容构建和打包流程，逐步迁移为 ToyShop。
-
-模块 ID 分别为 `assets.astmatrix` 和 `text.case`。AstMatrix 原有 `@astmatrix/*` 包名暂作内部实现命名，避免在架构初始化时重写成熟编码链。
-
-## 开发
-
-要求 Node.js 24 LTS 与 pnpm 12.11.2。
-工作区使用 hoisted 依赖布局，确保 React 与宿主渲染器共享同一实例。
-
-```sh
-pnpm install --frozen-lockfile
-pnpm dev
-pnpm typecheck
-pnpm test
-pnpm build:figma
-pnpm build:illustrator
-pnpm build:photoshop
-```
-
-浏览器 Playground 和三端 Web 界面均从 ToyShop 模块入口打开。三端宿主界面提供 Text Case 的选中对象或整文档扫描后直接转换，以及上一次转换的校验式撤销；Photoshop Native UXP 回退界面提供相同的基础操作。默认范围为选中对象，空选区不会自动扩大范围。锁定、隐藏、缺失字体及无法安全处理的富文本会跳过。浏览器 Playground 提供纯文本演示。
-
-Text Case 的 `ascii-latin-safe` 策略只改变完全由 ASCII 字母组成的拉丁词段，不会识别自然语言；例如由 ASCII 写成的西班牙语词也可能被转换。句首大写以实验性选项提供，缩写、品牌名和混合语言需人工核对。Figma 的当前范围为当前页面，Illustrator 的当前范围为活动画板内完整包含的文字框；Photoshop 因无法可靠确定当前区域而不提供该选项。复杂富文本支持仍属 PLAN.md Phase 2。三端代码和自动化检查不能替代真实宿主测试；发布前须分别验证样式保留、撤销和异常恢复。
-
-当前 Manifest 使用独立的 ToyShop 开发身份，避免覆盖原 AstMatrix。Figma 数字 ID 与 Illustrator CEP Bundle ID 是开发占位值；正式发布前须替换为各平台分配的身份，并完成真实宿主兼容性测试。现有签名与安装器资产来自 AstMatrix，不能直接作为 ToyShop 发布包。
-
-核心功能保持本地运行；Figma Manifest 禁止网络访问。
