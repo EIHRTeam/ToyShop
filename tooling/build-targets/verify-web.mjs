@@ -42,8 +42,11 @@ for (const profile of ['cep11', 'cep12'])
     if (!/<script defer src="\.\/assets\/[^"]+\.js"><\/script>/.test(html))
       throw new Error('CEP bundle must defer until CSInterface has loaded ' + directory);
     parse(js, { ecmaVersion: 2022, sourceType: 'script' });
-    if (/Object\.hasOwn\(|\.toSorted\(|\.toSpliced\(|\.at\(/.test(js))
-      throw new Error('Unpolyfilled API above Chromium 88 baseline ' + directory);
+    // Method names alone do not identify built-in APIs: Radix OrderedDict defines its own
+    // at/toSorted/toSpliced methods and uses Array.prototype.at only with a fallback.
+    // Reject direct calls to unsupported built-ins without flagging those custom methods.
+    if (/Object\.hasOwn\(|Array\.prototype\.(?:toSorted|toSpliced)\(/.test(js))
+      throw new Error('Direct unpolyfilled API above Chromium 88 baseline ' + directory);
     if (/oklch\(|:has\(|@layer/.test(css)) throw new Error('CSS outside baseline ' + directory);
     for (const name of ['OCR-A-NOTICE.txt', 'OCR-B-NOTICE.txt', 'BWIP-JS-MIT.txt'])
       if (!existsSync(join(directory, 'licenses', name)))
@@ -71,7 +74,7 @@ for (const profile of ['cep11', 'cep12'])
         jsParseES2022:
           'pass (classic script; Chrome 88 supports public class fields before ES2022)',
         localScriptLoading: 'pass (deferred IIFE, no module/crossorigin fetches)',
-        newApiAudit: 'pass',
+        directBuiltinApiAudit: 'pass',
         cssBaseline: 'pass',
         notices: 'pass',
         runtime: 'Current Chrome browser only; real CEP 11/12 acceptance remains separate',
