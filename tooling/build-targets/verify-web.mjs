@@ -2,7 +2,7 @@ import { readFileSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSy
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
-import { parse } from 'acorn';
+import { findUnsupportedWebApi } from './audit-web-apis.mjs';
 const destination = process.argv[2] ?? 'tmp/web-bundles.json';
 const records = [];
 for (const profile of ['cep11', 'cep12'])
@@ -41,9 +41,11 @@ for (const profile of ['cep11', 'cep12'])
       throw new Error('CEP HTML requires classic local resources ' + directory);
     if (!/<script defer src="\.\/assets\/[^"]+\.js"><\/script>/.test(html))
       throw new Error('CEP bundle must defer until CSInterface has loaded ' + directory);
-    parse(js, { ecmaVersion: 2022, sourceType: 'script' });
-    if (/Object\.hasOwn\(|\.toSorted\(|\.toSpliced\(|\.at\(/.test(js))
-      throw new Error('Unpolyfilled API above Chromium 88 baseline ' + directory);
+    const unsupportedApi = findUnsupportedWebApi(js);
+    if (unsupportedApi)
+      throw new Error(
+        'Unpolyfilled API above Chromium 88 baseline ' + directory + ': ' + unsupportedApi,
+      );
     if (/oklch\(|:has\(|@layer/.test(css)) throw new Error('CSS outside baseline ' + directory);
     for (const name of ['OCR-A-NOTICE.txt', 'OCR-B-NOTICE.txt', 'BWIP-JS-MIT.txt'])
       if (!existsSync(join(directory, 'licenses', name)))

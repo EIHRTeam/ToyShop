@@ -75,9 +75,9 @@ jobs:
   #
   # These steps produce local development bundles; release signing runs separately.
   build-checks:
-    name: Build checks (macOS)
+    name: Build checks (Ubuntu)
     needs: shared-checks
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
