@@ -2,7 +2,7 @@ import { readFileSync, existsSync, readdirSync, statSync, writeFileSync, mkdirSy
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
 import { dirname, join } from 'node:path';
-import { parse } from 'acorn';
+import { findUnsupportedWebApi } from './audit-web-apis.mjs';
 const destination = process.argv[2] ?? 'tmp/web-bundles.json';
 const records = [];
 for (const profile of ['cep11', 'cep12'])
@@ -41,12 +41,11 @@ for (const profile of ['cep11', 'cep12'])
       throw new Error('CEP HTML requires classic local resources ' + directory);
     if (!/<script defer src="\.\/assets\/[^"]+\.js"><\/script>/.test(html))
       throw new Error('CEP bundle must defer until CSInterface has loaded ' + directory);
-    parse(js, { ecmaVersion: 2022, sourceType: 'script' });
-    // Method names alone do not identify built-in APIs: Radix OrderedDict defines its own
-    // at/toSorted/toSpliced methods and uses Array.prototype.at only with a fallback.
-    // Reject direct calls to unsupported built-ins without flagging those custom methods.
-    if (/Object\.hasOwn\(|Array\.prototype\.(?:toSorted|toSpliced)\(/.test(js))
-      throw new Error('Direct unpolyfilled API above Chromium 88 baseline ' + directory);
+    const unsupportedApi = findUnsupportedWebApi(js);
+    if (unsupportedApi)
+      throw new Error(
+        'Unpolyfilled API above Chromium 88 baseline ' + directory + ': ' + unsupportedApi,
+      );
     if (/oklch\(|:has\(|@layer/.test(css)) throw new Error('CSS outside baseline ' + directory);
     for (const name of ['OCR-A-NOTICE.txt', 'OCR-B-NOTICE.txt', 'BWIP-JS-MIT.txt'])
       if (!existsSync(join(directory, 'licenses', name)))
@@ -74,7 +73,7 @@ for (const profile of ['cep11', 'cep12'])
         jsParseES2022:
           'pass (classic script; Chrome 88 supports public class fields before ES2022)',
         localScriptLoading: 'pass (deferred IIFE, no module/crossorigin fetches)',
-        directBuiltinApiAudit: 'pass',
+        newApiAudit: 'pass',
         cssBaseline: 'pass',
         notices: 'pass',
         runtime: 'Current Chrome browser only; real CEP 11/12 acceptance remains separate',
