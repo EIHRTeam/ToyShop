@@ -65,6 +65,9 @@ input[type='checkbox']:focus-visible {
   padding: 40px 32px 22px;
 }
 .brand {
+  --brand-title-size: 25px;
+  --brand-logo-size: 18px;
+  --brand-mark-size: 46px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -74,16 +77,19 @@ input[type='checkbox']:focus-visible {
   display: grid;
   place-items: center;
   background: var(--secondary);
-  color: var(--foreground);
-  border-radius: 5px;
-  width: 25px;
-  height: 25px;
-  font-size: 22px;
-  line-height: 1;
+  border-radius: 6px;
+  width: var(--brand-mark-size);
+  height: var(--brand-mark-size);
   flex-shrink: 0;
 }
+.brand-mark img {
+  display: block;
+  width: auto;
+  height: var(--brand-logo-size);
+  object-fit: contain;
+}
 .brand h1 {
-  font-size: 25px;
+  font-size: var(--brand-title-size);
   line-height: 1;
   letter-spacing: -0.8px;
   margin: 0;
@@ -570,7 +576,9 @@ input[type='checkbox'] {
   gap: 6px;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  /* Keep the 3px focus outline inside the scrollport without shifting the entries. */
+  padding: 3px 4px 3px 3px;
+  margin: -3px 0 -3px -3px;
 }
 .about-dialog .open-source-link {
   display: grid;

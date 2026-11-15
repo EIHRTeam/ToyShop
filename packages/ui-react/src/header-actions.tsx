@@ -20,6 +20,7 @@ export const ExternalLinkContext = createContext<
   ((url: string) => void | Promise<void>) | undefined
 >(undefined);
 const githubIcon = new URL('./assets/GitHub_Invertocat_Black.svg', import.meta.url).href;
+const toyshopLogo = new URL('./assets/ToyShop-noBackground.svg', import.meta.url).href;
 export interface HeaderProduct {
   name: string;
   projectUrl: string;
@@ -41,7 +42,7 @@ export function BrandHeader({
   return (
     <header className={className ? `brand ${className}` : 'brand'}>
       <div className="brand-mark" aria-hidden="true">
-        ▥
+        <img src={toyshopLogo} alt="" />
       </div>
       <h1>{product.name}</h1>
       <HeaderActions product={product} />

@@ -35,6 +35,11 @@ it('opens modules from the home cards and returns to the home screen', () => {
   const panel = mountToyshop();
   expect(document.querySelectorAll('.brand')).toHaveLength(1);
   expect(document.querySelector('.toyshop-header h1')?.textContent).toBe('ToyShop');
+  const logo = document.querySelector<HTMLImageElement>('.toyshop-header .brand-mark img');
+  expect(logo?.src).toBe(
+    new URL('../../packages/ui-react/src/assets/ToyShop-noBackground.svg', import.meta.url).href,
+  );
+  expect(logo?.alt).toBe('');
   expect(document.querySelectorAll('.header-actions')).toHaveLength(1);
   expect(screen.getByRole('heading', { name: '工具箱' })).toBeTruthy();
   expect(screen.queryByRole('navigation', { name: '工具模块' })).toBeNull();
