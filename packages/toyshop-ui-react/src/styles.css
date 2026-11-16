@@ -98,6 +98,11 @@
   margin: 0 auto;
   padding: 16px 24px 0;
 }
+.toyshop-module-panel[data-module='assets.astmatrix'] .toyshop-module-toolbar {
+  max-width: 1120px;
+  padding-right: 32px;
+  padding-left: 32px;
+}
 .toyshop-module-toolbar h2 {
   margin: 0;
   font-size: 16px;
@@ -178,6 +183,12 @@
   margin-top: 12px;
   color: var(--muted-foreground, #aaa);
   font-size: 12px;
+}
+@media (max-width: 720px) {
+  .toyshop-module-panel[data-module='assets.astmatrix'] .toyshop-module-toolbar {
+    padding-right: 18px;
+    padding-left: 18px;
+  }
 }
 @media (max-width: 400px) {
   .toyshop-header {

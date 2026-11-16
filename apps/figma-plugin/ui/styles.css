@@ -9,6 +9,10 @@ body {
 .astmatrix {
   padding: 16px;
 }
+.toyshop-module-panel[data-module='assets.astmatrix'] .toyshop-module-toolbar {
+  padding-right: 16px;
+  padding-left: 16px;
+}
 .figma-connection-diagnostic {
   margin: 0 16px 16px;
   color: var(--foreground);

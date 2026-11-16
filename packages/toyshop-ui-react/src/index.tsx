@@ -62,7 +62,7 @@ export function ToyshopPanel({
     <div className="toyshop-shell">
       <BrandHeader product={toyshopProduct} className="toyshop-header" />
       {current ? (
-        <section className="toyshop-module-panel" aria-label={currentName}>
+        <section className="toyshop-module-panel" data-module={moduleId} aria-label={currentName}>
           <header className="toyshop-module-toolbar">
             <button
               ref={backButton}
