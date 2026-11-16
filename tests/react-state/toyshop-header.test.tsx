@@ -84,10 +84,15 @@ it('updates text case labels when the language changes without clearing edited t
   fireEvent.click(screen.getByRole('button', { name: '英文大小写转换' }));
   expect(screen.getByRole('combobox', { name: '转换方式' })).toBeTruthy();
   expect(screen.getByRole('option', { name: '大写' })).toBeTruthy();
-  const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: '示例文字' });
+  const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: '输入文字' });
+  const output = screen.getByRole<HTMLTextAreaElement>('textbox', { name: '转换结果' });
+  expect(input.value).toBe('');
+  expect(output.value).toBe('');
+  expect(output.readOnly).toBe(true);
   fireEvent.change(input, { target: { value: 'hello WORLD' } });
   fireEvent.click(screen.getByRole('button', { name: '转换' }));
-  expect(input.value).toBe('HELLO WORLD');
+  expect(input.value).toBe('hello WORLD');
+  expect(output.value).toBe('HELLO WORLD');
 
   fireEvent.click(screen.getByRole('button', { name: '语言' }));
   fireEvent.click(screen.getByRole('menuitemradio', { name: 'English' }));
@@ -95,10 +100,40 @@ it('updates text case labels when the language changes without clearing edited t
   expect(screen.getByRole('region', { name: 'Text Case Converter' })).toBeTruthy();
   expect(screen.getByRole('combobox', { name: 'Conversion type' })).toBeTruthy();
   expect(screen.getByRole('option', { name: 'UPPERCASE' })).toBeTruthy();
-  expect(screen.getByRole('textbox', { name: 'Sample text' })).toBe(input);
-  expect(input.value).toBe('HELLO WORLD');
+  expect(screen.getByRole('textbox', { name: 'Input text' })).toBe(input);
+  expect(screen.getByRole('textbox', { name: 'Result' })).toBe(output);
+  expect(input.value).toBe('hello WORLD');
+  expect(output.value).toBe('HELLO WORLD');
   fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
   expect(input.value).toBe('hello WORLD');
+  expect(output.value).toBe('');
+});
+
+it('updates only the text result on conversion and restores the previous result on undo', () => {
+  mountToyshop();
+  fireEvent.click(screen.getByRole('button', { name: '英文大小写转换' }));
+  const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: '输入文字' });
+  const output = screen.getByRole<HTMLTextAreaElement>('textbox', { name: '转换结果' });
+  const convert = screen.getByRole('button', { name: '转换' });
+  fireEvent.click(convert);
+  expect(output.value).toBe('');
+  const text = 'Hello Café 世界\nWORLD 123 😀';
+  fireEvent.change(input, { target: { value: text } });
+  expect(output.value).toBe('');
+  fireEvent.click(convert);
+  expect(output.value).toBe('HELLO Café 世界\nWORLD 123 😀');
+  fireEvent.change(screen.getByRole('combobox', { name: '转换方式' }), {
+    target: { value: 'lower' },
+  });
+  expect(output.value).toBe('HELLO Café 世界\nWORLD 123 😀');
+  fireEvent.click(convert);
+  expect(output.value).toBe('hello Café 世界\nworld 123 😀');
+  expect(input.value).toBe(text);
+  fireEvent.change(input, { target: { value: 'next INPUT' } });
+  expect(output.value).toBe('hello Café 世界\nworld 123 😀');
+  fireEvent.click(screen.getByRole('button', { name: '撤销' }));
+  expect(output.value).toBe('HELLO Café 世界\nWORLD 123 😀');
+  expect(input.value).toBe('next INPUT');
 });
 
 it.each([

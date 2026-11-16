@@ -14,6 +14,8 @@ it('dry-run explicitly resolves pinned targets without invoking compilation', ()
   expect(run('web', '--profile=web-playground', '--dry-run')).toContain(
     '@astmatrix/playground-web',
   );
+  expect(run('web', '--profile=web-spa', '--dry-run')).toContain('@astmatrix/web-spa build:web');
+  expect(run('--list')).toContain('web-spa');
   expect(run('web', '--profile=uxp-webview', '--dry-run')).toContain('build:webview');
   expect(run('web', '--profile=figma-ui', '--dry-run')).toContain(
     '@astmatrix/figma-plugin build:ui',

@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "toyshop",
+  "pages_build_output_dir": "./apps/web-spa/dist",
+  "compatibility_date": "2026-11-13",
+}

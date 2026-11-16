@@ -45,7 +45,7 @@ Commands
   --list                               print the target/profile/alias tables
 
 Options
-  --profile=<cep11|cep12|uxp-webview|web-playground|figma-ui>
+  --profile=<cep11|cep12|uxp-webview|web-playground|web-spa|figma-ui>
   --target=<illustrator-2023|illustrator-2024|illustrator-2025|illustrator-2026|photoshop-2023|photoshop-2026|affinity|figma>
   --compiler=<on|off>                   React Compiler (default on)
   --dry-run                            print the plan without touching the filesystem `;
@@ -214,15 +214,17 @@ async function main() {
     const app =
       profile === 'figma-ui'
         ? '@astmatrix/figma-plugin'
-        : profile === 'web-playground'
-          ? '@astmatrix/playground-web'
-          : profile === 'uxp-webview'
-            ? '@astmatrix/photoshop-uxp'
-            : '@astmatrix/illustrator-cep';
+        : profile === 'web-spa'
+          ? '@astmatrix/web-spa'
+          : profile === 'web-playground'
+            ? '@astmatrix/playground-web'
+            : profile === 'uxp-webview'
+              ? '@astmatrix/photoshop-uxp'
+              : '@astmatrix/illustrator-cep';
     const script =
       profile === 'figma-ui'
         ? 'build:ui'
-        : profile === 'web-playground'
+        : profile === 'web-playground' || profile === 'web-spa'
           ? 'build:web'
           : profile === 'uxp-webview'
             ? 'build:webview'

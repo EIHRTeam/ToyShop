@@ -13,7 +13,13 @@
  * TypeScript or React Compiler. Each profile must be validated in its real host.
  */
 
-export type WebProfileId = 'cep11' | 'cep12' | 'uxp-webview' | 'web-playground' | 'figma-ui';
+export type WebProfileId =
+  | 'cep11'
+  | 'cep12'
+  | 'uxp-webview'
+  | 'web-playground'
+  | 'web-spa'
+  | 'figma-ui';
 
 export interface WebProfile {
   readonly id: WebProfileId;
@@ -27,6 +33,13 @@ export interface WebProfile {
 }
 
 export const WEB_PROFILES = {
+  'web-spa': {
+    id: 'web-spa',
+    target: 'baseline-widely-available',
+    cssTarget: null,
+    hosts: ['web-spa'],
+    notes: 'Standalone static browser application with SVG download and clipboard export.',
+  },
   'figma-ui': {
     id: 'figma-ui',
     target: 'chrome99',
@@ -108,7 +121,7 @@ export function resolveWebBuild(profile: WebProfileId): {
     );
   }
   return {
-    base: './',
+    base: profile === 'web-spa' ? '/' : './',
     build: {
       target: entry.target,
       ...(entry.cssTarget === null ? {} : { cssTarget: entry.cssTarget }),

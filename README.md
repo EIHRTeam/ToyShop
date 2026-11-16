@@ -14,6 +14,7 @@ A suite of toys for designers.
 
 - [Compatibility](#compatibility)
 - [Features](#features)
+- [Static website](#static-website)
 - [Installation](#installation)
   - [Adobe Illustrator](#adobe-illustrator)
   - [Adobe Photoshop](#adobe-photoshop)
@@ -34,6 +35,57 @@ A suite of toys for designers.
 
 - **Low Case - Upper Case Convert**<br>
     Convert selected text to lower case or upper case.
+
+## Static website
+
+The browser application provides text case conversion with separate input and result fields,
+plus barcode and QR code generation with SVG downloads and clipboard copying. Processing runs
+locally in the browser.
+
+Use Node.js 24 and the pinned pnpm 12.11.2 release.
+
+```sh
+pnpm install --frozen-lockfile
+pnpm --filter @astmatrix/web-spa dev
+pnpm build:spa
+pnpm check:spa-bundle
+pnpm exec wrangler pages dev
+```
+
+`pnpm build:spa` emits `apps/web-spa/dist/`. The build is also available through
+`pnpm build:web --profile=web-spa`, with `--dry-run` support. Wrangler reads the output directory
+from the root `wrangler.jsonc`. Pages serves the SPA entry for unmatched paths, and assets use
+root-relative URLs so nested addresses can be refreshed.
+
+### Cloudflare Pages setup
+
+1. Log in to the target Cloudflare account and create the Direct Upload project once.
+
+   ```sh
+   pnpm exec wrangler login
+   pnpm exec wrangler pages project create toyshop --production-branch=main
+   ```
+
+2. Add repository secrets `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` in GitHub Actions.
+   Grant the API token **Account / Cloudflare Pages / Edit** permission for the target account.
+3. Push to `main`. After all CI checks pass, the Preview deployment is published to the `beta`
+   branch alias, `beta.toyshop.pages.dev`. Pull requests and manually dispatched CI runs build
+   and validate the SPA.
+4. Once the beta deployment succeeds, add `beta.toys.eihrteam.org` under the Pages project's
+   **Custom domains**. After activation, set its Cloudflare DNS CNAME target to
+   `beta.toyshop.pages.dev` and enable proxying for the branch alias to work.
+5. Add `toys.eihrteam.org` under the same project's **Custom domains**, pointing its CNAME to
+   `toyshop.pages.dev`.
+6. Trigger the existing **Release** workflow from `main`. After signed packages, installer
+   verification and GitHub Release publication succeed, the workflow deploys the SPA artifact
+   built from that same commit to the `main` production branch and `toys.eihrteam.org`.
+
+The SPA travels as a separate workflow artifact. Deployment failures fail the corresponding
+job. For a failed deployment, rerun that job from the same workflow run to reuse its artifact.
+
+Cloudflare documents Direct Upload CI credentials and custom branch domains in its Pages
+guides. [Direct Upload CI](https://developers.cloudflare.com/pages/how-to/use-direct-upload-with-continuous-integration/)
+and [custom branch domains](https://developers.cloudflare.com/pages/how-to/custom-branch-aliases/).
 
 ## Installation
 

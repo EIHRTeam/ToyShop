@@ -28,6 +28,7 @@ import { insertionReason } from '@astmatrix/host-contract';
 import type { HostAdapter } from '@astmatrix/host-contract';
 import { initialSelection, selectionReducer } from './selection';
 import { copySvgToClipboard } from './clipboard';
+import { downloadSvg } from './download';
 import { LocaleProvider, useLocale } from './l10n';
 import { translateMessage } from './l10n/dynamic';
 import { translateError, translateValidationError } from './l10n/errors';
@@ -75,7 +76,7 @@ export function AstMatrixProviders({
   hostStatusMessage,
 }: {
   service: AstMatrixApplicationService;
-  adapter: HostAdapter;
+  adapter?: HostAdapter;
   children: ReactNode;
   debounceMs?: number;
   hostLocale?: string;
@@ -91,7 +92,7 @@ export function AstMatrixProviders({
       <ExternalLinkContext value={openExternal}>
         <ProjectLinkContext value={openProject}>
           <ServiceContext value={service}>
-            <HostContext value={adapter}>
+            <HostContext value={adapter ?? null}>
               <HostStatusContext value={hostStatusMessage}>
                 <SettingsContext value={settings}>
                   <SettingsDispatchContext value={setAdvanced}>
@@ -122,28 +123,24 @@ export function useHostSnapshot() {
 }
 interface Runtime {
   preview: PreviewController;
-  insert: InsertController;
 }
 export function AstMatrixPanel({ showHeader = true }: { showHeader?: boolean }) {
-  const service = useContext(ServiceContext),
-    adapter = useContext(HostContext);
+  const service = useContext(ServiceContext);
   const { debounceMs } = useContext(SettingsContext);
   const runtime = useMemo<Runtime>(() => {
-    if (!service || !adapter) throw new Error('Application and Host Providers required');
+    if (!service) throw new Error('Application Provider required');
     const preview = new PreviewController(service, {
       schedule: (callback) => {
         const timer = setTimeout(callback, debounceMs);
         return () => clearTimeout(timer);
       },
     });
-    return { preview, insert: new InsertController(adapter, preview) };
-  }, [service, adapter, debounceMs]);
+    return { preview };
+  }, [service, debounceMs]);
   useEffect(() => {
     runtime.preview.activate();
-    runtime.insert.activate();
     return () => {
       runtime.preview.dispose();
-      runtime.insert.dispose();
     };
   }, [runtime]);
   return (
@@ -436,17 +433,7 @@ function BarcodeForm({
 function PreviewPanel({ runtime }: { runtime: Runtime }) {
   const { t } = useTranslation();
   const { locale } = useLocale();
-  const mounted = useRef(false);
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
-  const preview = useAstMatrixPreview(runtime.preview),
-    insert = useInsert(runtime.insert);
-  const host = useHostSnapshot();
-  const hostStatusMessage = useContext(HostStatusContext);
+  const preview = useAstMatrixPreview(runtime.preview);
   const adapter = useContext(HostContext);
   const [copyResult, setCopyResult] = useState<{
     revision: number;
@@ -455,13 +442,7 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
   } | null>(null);
   const copyFeedback = copyResult?.revision === preview.revision ? copyResult : null;
   const copying = copyFeedback?.status === 'pending';
-  const fake = adapter?.id === 'development-fake';
   const ready = preview.status === 'ready' ? preview.barcode : null;
-  const insertionMessage = hostStatusMessage ?? (ready ? insertionReason(host, ready.scene) : null);
-  const reason =
-    insert.status === 'pending'
-      ? t(($) => $.preview.insertingPleaseWait)
-      : insertionMessage && translateError(t, insertionMessage);
   const copySvg = async () => {
     if (!ready || copying) return;
     const revision = preview.revision;
@@ -480,29 +461,26 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
       );
     }
   };
-  const insertScene = async () => {
+  const saveSvg = () => {
+    if (!ready) return;
     try {
-      const result = await runtime.insert.insert();
-      if (!mounted.current) return;
-      toast.success(
-        fake ? t(($) => $.preview.simulatedInsertSucceeded) : t(($) => $.preview.insertSucceeded),
-        {
-          description: `${result.objectId} / ${result.documentId}`,
-        },
-      );
+      downloadSvg(ready.svg, `astmatrix-${ready.request.symbologyId}.svg`);
     } catch (error) {
-      if (!mounted.current) return;
-      console.error('[ToyShop] insertion failed:', error);
-      toast.error(
-        error instanceof AstMatrixError
-          ? t(($) => $.common.errorWithCode, {
-              code: error.code,
-              message: translateError(t, error),
-            })
-          : translateError(t, error),
-      );
+      console.error('[ToyShop] SVG download failed:', error);
+      toast.error(t(($) => $.preview.downloadFailed));
     }
   };
+  const copyButton = (
+    <button
+      type="button"
+      onClick={() => void copySvg()}
+      disabled={!ready}
+      aria-disabled={copying || undefined}
+      aria-busy={copying}
+    >
+      {copying ? t(($) => $.preview.copying) : t(($) => $.preview.copySvg)}
+    </button>
+  );
   return (
     <section className="preview" aria-label={t(($) => $.preview.title)}>
       <div className="section-heading">
@@ -551,35 +529,18 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
           )}
         </div>
       ) : null}
-      <div className="actions">
-        <button
-          type="button"
-          className="primary"
-          disabled={!ready || !!reason}
-          onClick={() => {
-            void insertScene();
-          }}
-        >
-          {insert.status === 'pending'
-            ? fake
-              ? t(($) => $.preview.simulatingInsert)
-              : t(($) => $.preview.inserting)
-            : fake
-              ? t(($) => $.preview.simulateInsert)
-              : t(($) => $.preview.insertDocument)}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            void copySvg();
-          }}
-          disabled={!ready}
-          aria-disabled={copying || undefined}
-          aria-busy={copying}
-        >
-          {copying ? t(($) => $.preview.copying) : t(($) => $.preview.copySvg)}
-        </button>
-      </div>
+      {adapter ? (
+        <HostPreviewActions runtime={runtime} adapter={adapter}>
+          {copyButton}
+        </HostPreviewActions>
+      ) : (
+        <div className="actions">
+          <button type="button" className="primary" disabled={!ready} onClick={saveSvg}>
+            {t(($) => $.preview.downloadSvg)}
+          </button>
+          {copyButton}
+        </div>
+      )}
       {copyFeedback?.status === 'success' ? (
         <output className="success">{t(($) => $.preview.svgCopied)}</output>
       ) : copyFeedback?.status === 'error' ? (
@@ -589,7 +550,85 @@ function PreviewPanel({ runtime }: { runtime: Runtime }) {
           })}
         </p>
       ) : null}
-      {reason ? <p className="hint">{reason}</p> : null}
     </section>
+  );
+}
+
+function HostPreviewActions({
+  runtime,
+  adapter,
+  children,
+}: {
+  runtime: Runtime;
+  adapter: HostAdapter;
+  children: ReactNode;
+}) {
+  const { t } = useTranslation();
+  const controller = useMemo(
+    () => new InsertController(adapter, runtime.preview),
+    [adapter, runtime.preview],
+  );
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    controller.activate();
+    return () => {
+      mounted.current = false;
+      controller.dispose();
+    };
+  }, [controller]);
+  const preview = useAstMatrixPreview(runtime.preview);
+  const insert = useInsert(controller);
+  const host = useHostSnapshot();
+  const hostStatusMessage = useContext(HostStatusContext);
+  const ready = preview.status === 'ready' ? preview.barcode : null;
+  const fake = adapter.id === 'development-fake';
+  const insertionMessage = hostStatusMessage ?? (ready ? insertionReason(host, ready.scene) : null);
+  const reason =
+    insert.status === 'pending'
+      ? t(($) => $.preview.insertingPleaseWait)
+      : insertionMessage && translateError(t, insertionMessage);
+  const insertScene = async () => {
+    try {
+      const result = await controller.insert();
+      if (!mounted.current) return;
+      toast.success(
+        fake ? t(($) => $.preview.simulatedInsertSucceeded) : t(($) => $.preview.insertSucceeded),
+        { description: `${result.objectId} / ${result.documentId}` },
+      );
+    } catch (error) {
+      if (!mounted.current) return;
+      console.error('[ToyShop] insertion failed:', error);
+      toast.error(
+        error instanceof AstMatrixError
+          ? t(($) => $.common.errorWithCode, {
+              code: error.code,
+              message: translateError(t, error),
+            })
+          : translateError(t, error),
+      );
+    }
+  };
+  return (
+    <>
+      <div className="actions">
+        <button
+          type="button"
+          className="primary"
+          disabled={!ready || !!reason}
+          onClick={() => void insertScene()}
+        >
+          {insert.status === 'pending'
+            ? fake
+              ? t(($) => $.preview.simulatingInsert)
+              : t(($) => $.preview.inserting)
+            : fake
+              ? t(($) => $.preview.simulateInsert)
+              : t(($) => $.preview.insertDocument)}
+        </button>
+        {children}
+      </div>
+      {reason ? <p className="hint">{reason}</p> : null}
+    </>
   );
 }

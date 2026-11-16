@@ -10,6 +10,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -106,6 +109,19 @@ jobs:
       - name: Playground bundle (proves Vite 8 + React 19.3 + React Compiler build)
         run: pnpm --filter @astmatrix/playground-web build:web
 
+      - name: Build and verify static SPA
+        run: |
+          pnpm build:spa
+          pnpm check:spa-bundle
+
+      - name: Upload static SPA
+        uses: actions/upload-artifact@v7
+        with:
+          name: spa-preview-${{ github.sha }}
+          path: apps/web-spa/dist/
+          retention-days: 7
+          if-no-files-found: error
+
       - name: Illustrator, Photoshop and Figma development host bundles
         run: |
           pnpm build:illustrator
@@ -126,6 +142,37 @@ jobs:
 
       # TODO: Affinity bundle and signed CCX release package.
       # Signing stays decoupled from shared code compilation.
+
+  deploy-preview:
+    name: Deploy Pages Preview
+    needs: build-checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v8
+        with:
+          name: spa-preview-${{ github.sha }}
+          path: apps/web-spa/dist/
+      - run: pnpm check:spa-bundle
+      - name: Deploy beta branch
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          : "${CLOUDFLARE_API_TOKEN:?Configure the CLOUDFLARE_API_TOKEN secret}"
+          : "${CLOUDFLARE_ACCOUNT_ID:?Configure the CLOUDFLARE_ACCOUNT_ID secret}"
+          pnpm exec wrangler pages deploy --branch=beta --commit-hash="$GITHUB_SHA"
 
   # Platform checks — required before release, not on every pull request.
   #

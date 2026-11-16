@@ -6,6 +6,9 @@ packages:
   - 'tooling'
   - 'tests'
 nodeLinker: hoisted
+allowBuilds:
+  esbuild@0.28.2: true
+  workerd@1.20261113.1: true
 minimumReleaseAgeExclude:
   - '@oxfmt/binding-android-arm-eabi@0.73.0'
   - '@oxfmt/binding-android-arm64@0.73.0'

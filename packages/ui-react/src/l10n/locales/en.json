@@ -48,7 +48,9 @@
     "clipboardUnavailable": "Clipboard access is unavailable. Allow clipboard access and try again.",
     "engineError": "Encoding engine: {{message}}",
     "validationError": "Input validation: {{message}}",
-    "copyError": "Unable to copy SVG: {{message}}"
+    "copyError": "Unable to copy SVG: {{message}}",
+    "downloadSvg": "Download SVG",
+    "downloadFailed": "Unable to download SVG. Try again."
   },
   "toolbox": {
     "title": "Toolbox",
@@ -105,7 +107,9 @@
       "restoredWithFailures": "Restored {{count}} items; {{failed}} failed.",
       "skipped": "Skipped {{count}} items."
     },
-    "skippedItem": "{{name}}: {{reason}}"
+    "skippedItem": "{{name}}: {{reason}}",
+    "inputText": "Input text",
+    "outputText": "Result"
   },
   "barcode": {
     "tabs": {

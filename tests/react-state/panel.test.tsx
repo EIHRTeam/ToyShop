@@ -25,7 +25,7 @@ afterEach(async () => {
 });
 const button = (label: string) =>
   Array.from(document.querySelectorAll('button')).find((b) => b.textContent === label)!;
-async function mount(hostLocale = 'zh_CN') {
+async function mount(hostLocale = 'zh_CN', browser = false) {
   const adapter = new FakeHostAdapter(),
     service = new AstMatrixApplicationService(bwipProvider);
   await act(async () =>
@@ -33,7 +33,7 @@ async function mount(hostLocale = 'zh_CN') {
       <StrictMode>
         <AstMatrixProviders
           service={service}
-          adapter={adapter}
+          adapter={browser ? undefined : adapter}
           hostLocale={hostLocale}
           debounceMs={0}
         >
@@ -321,4 +321,89 @@ it('ignores a delayed clipboard acknowledgement after a new preview is generated
   expect(document.querySelector<HTMLImageElement>('.preview-stage img')).not.toBeNull();
   expect(document.body.textContent).not.toContain('SVG 已复制');
   expect(button('复制 SVG').disabled).toBe(false);
+});
+
+it.each(['barcode', 'matrix'])(
+  'downloads and copies the current %s SVG without a host',
+  async (tab) => {
+    await mount('zh_CN', true);
+    if (tab === 'matrix') {
+      await act(async () => button('二维码').click());
+      await change('编码内容', 'Hello 世界');
+      await tick();
+    }
+    const svg = decodeURIComponent(
+      document.querySelector<HTMLImageElement>('.preview-stage img')!.src.split(',')[1]!,
+    );
+    const createObjectURL = vi.fn<(blob: Blob) => string>(() => 'blob:toyshop-svg');
+    const revokeObjectURL = vi.fn<(url: string) => void>();
+    vi.stubGlobal(
+      'URL',
+      class extends URL {
+        static override createObjectURL = createObjectURL;
+        static override revokeObjectURL = revokeObjectURL;
+      },
+    );
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (
+      this: HTMLAnchorElement,
+    ) {
+      expect(this.isConnected).toBe(true);
+      expect(this.getAttribute('href')).toBe('blob:toyshop-svg');
+      expect(this.download).toBe(`astmatrix-${tab === 'matrix' ? 'qrcode' : 'ean13'}.svg`);
+    });
+    const writeText = vi.fn<(text: string) => Promise<void>>(async () => {});
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    try {
+      expect(
+        Array.from(document.querySelectorAll('.preview .actions button'), (el) => el.textContent),
+      ).toEqual(['下载 SVG', '复制 SVG']);
+      expect(document.body.textContent).not.toContain('请先打开文档');
+      await act(async () => button('下载 SVG').click());
+      expect(click).toHaveBeenCalledOnce();
+      const blob = createObjectURL.mock.calls[0]![0];
+      expect(blob.type).toBe('image/svg+xml');
+      const downloaded = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => resolve(reader.result), { once: true });
+        reader.readAsText(blob);
+      });
+      expect(downloaded).toBe(svg);
+      await tick();
+      expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:toyshop-svg');
+      expect(document.querySelector('a[download]')).toBeNull();
+      await act(async () => button('复制 SVG').click());
+      expect(writeText).toHaveBeenCalledExactlyOnceWith(svg);
+      await change('编码内容', '');
+      expect(button('下载 SVG').disabled).toBe(true);
+      expect(button('复制 SVG').disabled).toBe(true);
+    } finally {
+      click.mockRestore();
+    }
+  },
+);
+
+it('cleans up a failed SVG download and reports the error in the selected language', async () => {
+  await mount('en_US', true);
+  const revokeObjectURL = vi.fn<(url: string) => void>();
+  vi.stubGlobal(
+    'URL',
+    class extends URL {
+      static override createObjectURL = () => 'blob:failed-svg';
+      static override revokeObjectURL = revokeObjectURL;
+    },
+  );
+  const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+    throw new Error('Download blocked');
+  });
+  try {
+    await act(async () => button('Download SVG').click());
+    await tick();
+    expect(document.body.textContent).toContain('Unable to download SVG. Try again.');
+    expect(document.querySelector('a[download]')).toBeNull();
+    expect(revokeObjectURL).toHaveBeenCalledExactlyOnceWith('blob:failed-svg');
+  } finally {
+    click.mockRestore();
+    error.mockRestore();
+  }
 });

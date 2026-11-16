@@ -38,7 +38,9 @@
     "check:web-bundles": "node tooling/build-targets/verify-web.mjs",
     "check:host-bundles": "node tooling/build-targets/verify-hosts.mjs",
     "build:figma": "node tooling/build-targets/build.mjs figma",
-    "check:figma-bundle": "node tooling/build-targets/verify-figma.mjs"
+    "check:figma-bundle": "node tooling/build-targets/verify-figma.mjs",
+    "build:spa": "node tooling/build-targets/build.mjs web --profile=web-spa",
+    "check:spa-bundle": "node tooling/build-targets/verify-spa.mjs"
   },
   "devDependencies": {
     "@rolldown/plugin-babel": "^0.2.4",
@@ -52,7 +54,8 @@
     "oxlint": "^1.88.0",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^5.0.4"
+    "vitest": "^5.0.4",
+    "wrangler": "4.162.0"
   },
   "engines": {
     "node": ">=24.0.0",

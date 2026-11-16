@@ -48,7 +48,9 @@
     "clipboardUnavailable": "无法访问剪贴板，请允许剪贴板访问后重试。",
     "engineError": "编码引擎：{{message}}",
     "validationError": "输入校验：{{message}}",
-    "copyError": "复制 SVG 失败：{{message}}"
+    "copyError": "复制 SVG 失败：{{message}}",
+    "downloadSvg": "下载 SVG",
+    "downloadFailed": "下载 SVG 失败，请重试。"
   },
   "toolbox": {
     "title": "工具箱",
@@ -105,7 +107,9 @@
       "restoredWithFailures": "已撤销 {{count}} 项；失败 {{failed}} 项。",
       "skipped": "跳过 {{count}} 项。"
     },
-    "skippedItem": "{{name}}：{{reason}}"
+    "skippedItem": "{{name}}：{{reason}}",
+    "inputText": "输入文字",
+    "outputText": "转换结果"
   },
   "barcode": {
     "tabs": {

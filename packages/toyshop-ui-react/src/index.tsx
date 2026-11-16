@@ -93,7 +93,7 @@ export function ToyshopPanel({
                 setUndoPlan={setTextUndoPlan}
               />
             ) : (
-              <TextCaseDemo />
+              <TextCaseBrowser />
             )}
           </div>
         </section>
@@ -296,9 +296,10 @@ function BarcodeIcon() {
   );
 }
 
-function TextCaseDemo() {
+function TextCaseBrowser() {
   const { t } = useTranslation();
-  const [input, setInput] = useState('Hello Café 世界 WORLD');
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
   const [operation, setOperation] = useState<TextCaseOperation>('upper');
   const [previous, setPrevious] = useState<string | null>(null);
 
@@ -317,17 +318,14 @@ function TextCaseDemo() {
         </select>
       </label>
       <label className="field" htmlFor="toyshop-input">
-        {t(($) => $.textCase.sampleText)}
+        {t(($) => $.textCase.inputText)}
         <textarea
           id="toyshop-input"
-          aria-label={t(($) => $.textCase.sampleText)}
+          aria-label={t(($) => $.textCase.inputText)}
           rows={4}
           spellCheck={false}
           value={input}
-          onChange={(event) => {
-            setInput(event.target.value);
-            setPrevious(null);
-          }}
+          onChange={(event) => setInput(event.target.value)}
         />
       </label>
       <div className="actions toyshop-actions">
@@ -335,8 +333,8 @@ function TextCaseDemo() {
           className="primary"
           type="button"
           onClick={() => {
-            setPrevious(input);
-            setInput(convertTextCase(input, operation));
+            setPrevious(output);
+            setOutput(convertTextCase(input, operation));
             toast.success(t(($) => $.textCase.status.changed, { count: 1 }));
           }}
         >
@@ -346,7 +344,7 @@ function TextCaseDemo() {
           type="button"
           disabled={previous === null}
           onClick={() => {
-            setInput(previous!);
+            setOutput(previous!);
             setPrevious(null);
             toast.success(t(($) => $.textCase.status.restored, { count: 1 }));
           }}
@@ -354,6 +352,10 @@ function TextCaseDemo() {
           {t(($) => $.common.undo)}
         </button>
       </div>
+      <label className="field" htmlFor="toyshop-output">
+        {t(($) => $.textCase.outputText)}
+        <textarea id="toyshop-output" rows={4} spellCheck={false} readOnly value={output} />
+      </label>
     </div>
   );
 }
